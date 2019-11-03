@@ -1,2 +1,7 @@
 # prototype
 Prototype &amp; Puzzles
+
+## design
+
+## puzzles
+Look into [Smart Scale](https://www.instructables.com/id/DIY-Smart-Scale-With-Alarm-Clock-with-Wi-Fi-ESP826/) project for Indiana Jones like puzzle.
