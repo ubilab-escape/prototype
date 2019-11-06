@@ -14,9 +14,9 @@ Rearrange an ascii picture by inserting different floppy disks which trigger dif
 ## Components
 |Component| In Stock|
 |---------|:--------:|
-|RGB LED strip| - [ ]|
-|1-4 floppy reader|- [ ]|
-|min 4-8 floppy disks|- [ ]|
-|ESP8266|- [ ]|
-|HX711|- [ ]|
-|weight scale| - [ ]|
+|RGB LED strip| &#9744; |
+|1-4 floppy reader|&#9744; |
+|min 4-8 floppy disks|&#9744; |
+|ESP8266|&#9744; |
+|HX711|&#9744; |
+|weight scale| &#9744; |
