@@ -25,7 +25,7 @@ TileStructure::TileStructure(std::vector<std::vector<bool>> pixels) {
             int tileJ = j / T;
             int pixI = i % T;
             int pixJ = j % T;
-            int type = (tileI % 2) + (tileJ % 2);
+            int type = (tileI % 2) + 2*(tileJ % 2);
             tiles[tileI][tileJ]._pixels[pixI][pixJ] = pixels[i][j];
             tiles[tileI][tileJ]._type = type;
         }
@@ -66,6 +66,7 @@ void TileStructure::turnTilesAround(int type) {
     int beginI = 0;
     int beginJ = 0;
     bool forward = true;
+    bool tileinline = false;
     for (int i = 0; i < N; i++) {
         for (int j2 = 0, j = forward ? j2 : (N-1) - j2;
              j2 < N; j2++, j = forward ? j2 : (N-1) - j2) {
@@ -73,14 +74,19 @@ void TileStructure::turnTilesAround(int type) {
                 currentTile = _tiles[i][j];
                 _tiles[i][j] = lastTile;
                 lastTile = currentTile;
+                tileinline = true;
             } else if (_tiles[i][j]._type == type && !last) {
                 lastTile = _tiles[i][j];
                 beginI = i;
                 beginJ = j;
                 last = true;
+                tileinline = true;
             }
         }
-        forward = !forward;
+        if (tileinline) {
+            forward = !forward;
+            tileinline = false;
+        }
     }
     if (last) {
         _tiles[beginI][beginJ] = lastTile;
@@ -90,9 +96,17 @@ void TileStructure::turnTilesAround(int type) {
 void TileStructure::draw(int posX, int posY) {
     int N = _tiles.size();
     int T = _tiles[0][0]._pixels.size();
+    start_color();
+    use_default_colors();
+    init_pair(1, COLOR_RED, -1);
+    init_pair(2, COLOR_GREEN, -1);
+    init_pair(3, COLOR_BLUE, -1);
+    init_pair(4, COLOR_YELLOW, -1);
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
+            attron(COLOR_PAIR(_tiles[i][j]._type + 1));
             _tiles[i][j].draw(posX + 2*j*T, posY + i*T);
+            attroff(COLOR_PAIR(_tiles[i][j]._type + 1));
         }
     }
 }
