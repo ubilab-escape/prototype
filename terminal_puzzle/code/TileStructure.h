@@ -17,6 +17,7 @@ class TileStructure {
     void turnTilesAround(int type);
     void printTypes();
     void printTiles();
+    void shuffle();
     void draw(int posX, int posY);
     friend std::ostream & operator<< (std::ostream &out,
                          const TileStructure &tileStruct);

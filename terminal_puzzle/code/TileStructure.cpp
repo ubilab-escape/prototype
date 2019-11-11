@@ -3,6 +3,8 @@
 
 #include "./TileStructure.h"
 #include <ncurses.h>
+#include <stdlib.h>
+#include <time.h>
 #include <vector>
 #include <iostream>
 #include "./Tile.h"
@@ -111,6 +113,21 @@ void TileStructure::draw(int posX, int posY) {
     }
 }
 
+void TileStructure::shuffle() {
+    int randtype = 0;
+    int randop = 0;
+    unsigned int seed = time(NULL);
+    for (int c = 0; c < 20; c++) {
+        randtype = rand_r(&seed) % 4;
+        randop = rand_r(&seed) % 2;
+        if (randop == 0) {
+            this->turnTilesRight(randtype);
+        } else if (randop == 1) {
+            this->turnTilesAround(randtype);
+        }
+    }
+}
+
 std::ostream & operator << (std::ostream &out,
                             const TileStructure &tileStruct) {
     int N = tileStruct._tiles.size();
@@ -134,5 +151,4 @@ std::ostream & operator << (std::ostream &out,
 bool operator== (const TileStructure &tstruct1, const TileStructure &tstruct2) {
     return (tstruct1._tiles == tstruct2._tiles);
 }
-
 

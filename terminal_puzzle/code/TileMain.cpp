@@ -35,6 +35,7 @@ int main(int argc, char** argv) {
                 {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
 
   TileStructure tstruct = TileStructure(picture);
+  TileStructure originalstruct = tstruct;
   initscr();
   cbreak();
   noecho();
@@ -43,7 +44,7 @@ int main(int argc, char** argv) {
   keypad(stdscr, true);
   refresh();
   int key;
-  int i = 0;
+  tstruct.shuffle();
   tstruct.draw(5, 5);
   while (true) {
     key = getch();
@@ -80,10 +81,16 @@ int main(int argc, char** argv) {
         tstruct.turnTilesAround(3);
         clear();
     }
-
     tstruct.draw(5, 5);
     refresh();
-    i = (i + 1) % 4;
+    if (tstruct == originalstruct) {
+        sleep(1);
+        clear();
+        mvprintw(5, 5, "YOU SOLVED IT");
+        refresh();
+        sleep(5);
+        break;
+    }
   }
   endwin();
 }
