@@ -16,8 +16,8 @@ Rearrange an ascii picture by inserting different floppy disks which trigger dif
 ## Components
 |Component| In Stock| Buy Links|
 |---------|:--------:|
-|1-4 floppy reader|&#9744; | [Conrad] (https://www.conrad.com/p/basetech-gen-144-floppy-disk-drive-usb-20-1170561) |
-|min 4-8 floppy disks|&#9744; | [Conrad] (https://www.conrad.com/p/xlyne-9010000-blank-35-floppy-disk-144-mb-10-pcs-417512) |
+|1-4 floppy reader|&#9744; | [Conrad](https://www.conrad.com/p/basetech-gen-144-floppy-disk-drive-usb-20-1170561) |
+|min 4-8 floppy disks|&#9744; | [Conrad](https://www.conrad.com/p/xlyne-9010000-blank-35-floppy-disk-144-mb-10-pcs-417512) |
 |ESP8266|&#9744; | |
-|HX711|&#9744; [Conrad] (https://www.conrad.de/de/p/sparkfun-load-cell-amplifier-hx711-for-weight-measurements-802236777.html) |
-|weight scale| &#9744; [Conrad] (https://www.conrad.de/de/p/sparkfun-mini-load-cell-100g-straight-bar-tal221-802236791.html) | |
+|HX711|&#9744; [Conrad](https://www.conrad.de/de/p/sparkfun-load-cell-amplifier-hx711-for-weight-measurements-802236777.html) |
+|weight scale| &#9744; [Conrad](https://www.conrad.de/de/p/sparkfun-mini-load-cell-100g-straight-bar-tal221-802236791.html) | 
