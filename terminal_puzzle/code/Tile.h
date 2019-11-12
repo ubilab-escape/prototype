@@ -13,7 +13,6 @@ class Tile {
     explicit Tile(int size = 0, int type = 0);
     explicit Tile(std::vector<std::vector<int>> pixels, int type = 0);
     void turnDirection(int direction);
-    void turnRight();
     void turnPixelsRight();
     void printPixels();
     void draw(int posX, int posY);

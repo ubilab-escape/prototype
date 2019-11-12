@@ -8,11 +8,10 @@
 #include "./TileStructure.h"
 
 int main(int argc, char** argv) {
-  std::vector<std::vector<int>> pixelsA = {{1, 0, 1}, {1, 0, 1}, {1, 1, 1}};
-  std::vector<std::vector<int>> pixelsB = {{1, 1, 1}, {1, 0, 1}, {1, 0, 1}};
-  std::vector<std::vector<int>> pixelsC = {{1, 1, 1}, {0, 0, 1}, {1, 1, 1}};
-  std::vector<std::vector<int>> pixelsD = {{1, 1, 1}, {1, 0, 0}, {1, 1, 1}};
+  // init TileStructure
   TileStructure tstruct = TileStructure("picture.txt");
+
+  // ncurses init stuff
   initscr();
   cbreak();
   noecho();
@@ -20,14 +19,20 @@ int main(int argc, char** argv) {
   nodelay(stdscr, true);
   keypad(stdscr, true);
   int key;
+
+  // show TileStruct before shuffeled
   clear();
   tstruct.draw(5, 5);
   refresh();
   sleep(2);
+
+  // shuffle and show shuffeled TileStruct
   tstruct.shuffle();
   clear();
   tstruct.draw(5, 5);
   refresh();
+
+  // start loop
   while (true) {
     key = getch();
     if (key == 27) break;

@@ -15,24 +15,29 @@
 #include <iostream>
 #include "./Tile.h"
 
+// global variables
 std::vector<std::vector<Tile>> _tiles;
 std::vector<std::vector<Tile>> _initial_tiles;
 
+// Constructor 1: Initialize TileStructure by 2D Tile vector.
 TileStructure::TileStructure(std::vector<std::vector<Tile>> tiles) {
     _tiles = tiles;
     _initial_tiles = tiles;
 }
 
+// Constructor 2: Initialize TileStructure by 2D pixel vector.
 TileStructure::TileStructure(std::vector<std::vector<int>> pixels) {
     this->pixelsToTiles(pixels);
     _initial_tiles = _tiles;
 }
 
+// Constructor 3: Initialize TileStructure using file.
 TileStructure::TileStructure(const char* filepath) {
     this->pixelsFromFile(filepath);
     _initial_tiles = _tiles;
 }
 
+// function: changes _pixels to new 2D pixel array from 2D pixel vector.
 void TileStructure::pixelsToTiles(std::vector<std::vector<int>> pixels) {
     int N = 4;
     int P = pixels.size() - pixels.size() % N;
@@ -54,7 +59,7 @@ void TileStructure::pixelsToTiles(std::vector<std::vector<int>> pixels) {
 }
 
 
-
+// function: changes _pixels to 2D Tile vector extracted from file.
 void TileStructure::pixelsFromFile(const char* filepath) {
     std::ifstream in;
     in.open(filepath, std::ios::in);
@@ -75,6 +80,7 @@ void TileStructure::pixelsFromFile(const char* filepath) {
     this->pixelsToTiles(pixels);
 }
 
+// print all the types of the TileStruct
 void TileStructure::printTypes() {
     int N = _tiles.size();
     for (int i = 0; i < N; i++) {
@@ -86,18 +92,20 @@ void TileStructure::printTypes() {
     }
 }
 
+// function: Turns all the Tiles of a specific Tile Right
 void TileStructure::turnTilesRight(int type) {
     int N = _tiles.size();
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
             if (_tiles[i][j]._type == type) {
-                _tiles[i][j].turnRight();
+                _tiles[i][j].turnPixelsRight();
             }
         }
         std::cout << "\n";
     }
 }
 
+// function: Turns all the Tiles in TileStruct around.
 void TileStructure::turnTilesAround(int type) {
     int N = _tiles.size();
     bool last = false;
@@ -133,6 +141,7 @@ void TileStructure::turnTilesAround(int type) {
     }
 }
 
+// function: Draw the TileStructure using ncurses
 void TileStructure::draw(int posX, int posY) {
     int N = _tiles.size();
     int T = _tiles[0][0]._pixels.size();
@@ -151,6 +160,7 @@ void TileStructure::draw(int posX, int posY) {
     }
 }
 
+// function: applies 20 random turn functions to TileStructure.
 void TileStructure::shuffle() {
     int randtype = 0;
     int randop = 0;
@@ -166,10 +176,12 @@ void TileStructure::shuffle() {
     }
 }
 
+// bool: checks if Tile equals its initial state.
 bool TileStructure::solved() {
     return _tiles == _initial_tiles;
 }
 
+// friend function: Use the output stream to print out TileStruct pixels.
 std::ostream & operator << (std::ostream &out,
                             const TileStructure &tileStruct) {
     int N = tileStruct._tiles.size();
@@ -190,6 +202,7 @@ std::ostream & operator << (std::ostream &out,
     return out;
 }
 
+// friend function: Use == to check equality of TileStructures
 bool operator== (const TileStructure &tstruct1, const TileStructure &tstruct2) {
     return (tstruct1._tiles == tstruct2._tiles);
 }

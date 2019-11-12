@@ -12,13 +12,13 @@ TEST(TileTest, TurnRightTest) {
     std::vector<std::vector<int>> pixels_2 = {{1, 0, 0}, {1, 1, 1}, {1, 0, 1}};
     std::vector<std::vector<int>> pixels_3 = {{1, 1, 1}, {0, 1, 0}, {1, 1, 0}};
     Tile tileA = Tile(pixels_0);
-    tileA.turnRight();
+    tileA.turnPixelsRight();
     ASSERT_EQ(tileA._pixels, pixels_1);
-    tileA.turnRight();
+    tileA.turnPixelsRight();
     ASSERT_EQ(tileA._pixels, pixels_2);
-    tileA.turnRight();
+    tileA.turnPixelsRight();
     ASSERT_EQ(tileA._pixels, pixels_3);
-    tileA.turnRight();
+    tileA.turnPixelsRight();
     ASSERT_EQ(tileA._pixels, pixels_0);
 }
 
