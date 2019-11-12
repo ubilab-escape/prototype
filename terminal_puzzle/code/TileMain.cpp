@@ -9,7 +9,7 @@
 
 int main(int argc, char** argv) {
   // init TileStructure
-  TileStructure tstruct = TileStructure("picture.txt");
+  TileStructure tstruct = TileStructure("adidas.tex");
 
   // ncurses init stuff
   initscr();
