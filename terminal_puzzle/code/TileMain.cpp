@@ -12,39 +12,13 @@ int main(int argc, char** argv) {
   std::vector<std::vector<int>> pixelsB = {{1, 1, 1}, {1, 0, 1}, {1, 0, 1}};
   std::vector<std::vector<int>> pixelsC = {{1, 1, 1}, {0, 0, 1}, {1, 1, 1}};
   std::vector<std::vector<int>> pixelsD = {{1, 1, 1}, {1, 0, 0}, {1, 1, 1}};
-  std::vector<std::vector<int>> picture =
-               {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                {0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0},
-                {0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0},
-                {0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0},
-                {0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0},
-                {0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0},
-                {0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0},
-                {0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0},
-                {0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0},
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                {0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0},
-                {0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0},
-                {0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                {0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0},
-                {0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0},
-                {0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0},
-                {0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0},
-                {0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0},
-                {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
-
-  TileStructure tstruct = TileStructure(picture);
-  TileStructure originalstruct = tstruct;
+  TileStructure tstruct = TileStructure("picture.txt");
   initscr();
   cbreak();
   noecho();
   curs_set(false);
   nodelay(stdscr, true);
   keypad(stdscr, true);
-  clear();
-  tstruct.pixelsFromFile("picture.txt");
-  refresh();
   int key;
   clear();
   tstruct.draw(5, 5);
@@ -91,7 +65,7 @@ int main(int argc, char** argv) {
     }
     tstruct.draw(5, 5);
     refresh();
-    if (tstruct == originalstruct) {
+    if (tstruct.solved()) {
         sleep(1);
         clear();
         mvprintw(5, 5, "YOU SOLVED IT");

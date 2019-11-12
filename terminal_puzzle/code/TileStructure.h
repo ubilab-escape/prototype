@@ -12,6 +12,7 @@ class TileStructure {
     // constructor
     explicit TileStructure(std::vector<std::vector<Tile>> tiles);
     explicit TileStructure(std::vector<std::vector<int>> pixels);
+    explicit TileStructure(const char* filepath);
 
     void pixelsFromFile(const char* filepath);
     void pixelsToTiles(std::vector<std::vector<int>> pixels);
@@ -20,6 +21,7 @@ class TileStructure {
     void printTypes();
     void printTiles();
     void shuffle();
+    bool solved();
     void draw(int posX, int posY);
     friend std::ostream & operator<< (std::ostream &out,
                          const TileStructure &tileStruct);

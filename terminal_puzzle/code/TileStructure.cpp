@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <string>
 #include <sstream>
 #include <fstream>
 #include <vector>
@@ -15,13 +16,21 @@
 #include "./Tile.h"
 
 std::vector<std::vector<Tile>> _tiles;
+std::vector<std::vector<Tile>> _initial_tiles;
 
 TileStructure::TileStructure(std::vector<std::vector<Tile>> tiles) {
     _tiles = tiles;
+    _initial_tiles = tiles;
 }
 
 TileStructure::TileStructure(std::vector<std::vector<int>> pixels) {
-   this->pixelsToTiles(pixels); 
+    this->pixelsToTiles(pixels);
+    _initial_tiles = _tiles;
+}
+
+TileStructure::TileStructure(const char* filepath) {
+    this->pixelsFromFile(filepath);
+    _initial_tiles = _tiles;
 }
 
 void TileStructure::pixelsToTiles(std::vector<std::vector<int>> pixels) {
@@ -54,7 +63,7 @@ void TileStructure::pixelsFromFile(const char* filepath) {
     char c;
     while (in >> row) {
         std::vector<int> pixelline;
-        for(int k = 0; k < row.length(); k++) {
+        for (unsigned int k = 0; k < row.length(); k++) {
             c = row[k];
             if (c == '0' || c == '1') {
                 int pix = (c == '1');
@@ -155,6 +164,10 @@ void TileStructure::shuffle() {
             this->turnTilesAround(randtype);
         }
     }
+}
+
+bool TileStructure::solved() {
+    return _tiles == _initial_tiles;
 }
 
 std::ostream & operator << (std::ostream &out,
