@@ -25,8 +25,8 @@ TileStructure::TileStructure(std::vector<std::vector<int>> pixels) {
 }
 
 void TileStructure::pixelsToTiles(std::vector<std::vector<int>> pixels) {
-    int P = pixels.size();
     int N = 4;
+    int P = pixels.size() - pixels.size() % N;
     int T = P / N;
     Tile single_tile = Tile(T);
     std::vector<std::vector<Tile>> tiles(N, std::vector<Tile>(N, single_tile));
