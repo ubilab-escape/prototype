@@ -9,17 +9,17 @@
 
 // global variables
 
-std::vector<std::vector<bool>> _pixels;
+std::vector<std::vector<int>> _pixels;
 int _direction;
 int _type;
 
 Tile::Tile(int N, int type) {
-     std::vector<std::vector<bool>> pixels(N , std::vector<bool> (N, 0));
+     std::vector<std::vector<int>> pixels(N , std::vector<int> (N, 0));
     _pixels = pixels;
     _type = type;
 }
 
-Tile::Tile(std::vector<std::vector<bool>> pixels, int type) {
+Tile::Tile(std::vector<std::vector<int>> pixels, int type) {
     _pixels = pixels;
     _direction = 0;
     _type = type;
@@ -39,7 +39,7 @@ void Tile::turnRight() {
 }
 
 void Tile::turnPixelsRight() {
-    std::vector<std::vector<bool>> new_pixels = _pixels;
+    std::vector<std::vector<int>> new_pixels = _pixels;
     int N = new_pixels.size();
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {

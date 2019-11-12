@@ -5,6 +5,11 @@
 #include <ncurses.h>
 #include <stdlib.h>
 #include <time.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <sstream>
+#include <fstream>
 #include <vector>
 #include <iostream>
 #include "./Tile.h"
@@ -15,7 +20,11 @@ TileStructure::TileStructure(std::vector<std::vector<Tile>> tiles) {
     _tiles = tiles;
 }
 
-TileStructure::TileStructure(std::vector<std::vector<bool>> pixels) {
+TileStructure::TileStructure(std::vector<std::vector<int>> pixels) {
+   this->pixelsToTiles(pixels); 
+}
+
+void TileStructure::pixelsToTiles(std::vector<std::vector<int>> pixels) {
     int P = pixels.size();
     int N = 4;
     int T = P / N;
@@ -36,6 +45,26 @@ TileStructure::TileStructure(std::vector<std::vector<bool>> pixels) {
 }
 
 
+
+void TileStructure::pixelsFromFile(const char* filepath) {
+    std::ifstream in;
+    in.open(filepath, std::ios::in);
+    std::vector<std::vector<int>> pixels;
+    std::string row;
+    char c;
+    while (in >> row) {
+        std::vector<int> pixelline;
+        for(int k = 0; k < row.length(); k++) {
+            c = row[k];
+            if (c == '0' || c == '1') {
+                int pix = (c == '1');
+                pixelline.push_back(pix);
+            }
+        }
+        pixels.push_back(pixelline);
+    }
+    this->pixelsToTiles(pixels);
+}
 
 void TileStructure::printTypes() {
     int N = _tiles.size();

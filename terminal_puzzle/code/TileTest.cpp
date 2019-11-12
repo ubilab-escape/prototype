@@ -7,10 +7,10 @@
 #include "./TileStructure.h"
 
 TEST(TileTest, TurnRightTest) {
-    std::vector<std::vector<bool>> pixels_0 ={{1, 0, 1}, {1, 1, 1}, {0, 0, 1}};
-    std::vector<std::vector<bool>> pixels_1 = {{0, 1, 1}, {0, 1, 0}, {1, 1, 1}};
-    std::vector<std::vector<bool>> pixels_2 = {{1, 0, 0}, {1, 1, 1}, {1, 0, 1}};
-    std::vector<std::vector<bool>> pixels_3 = {{1, 1, 1}, {0, 1, 0}, {1, 1, 0}};
+    std::vector<std::vector<int>> pixels_0 ={{1, 0, 1}, {1, 1, 1}, {0, 0, 1}};
+    std::vector<std::vector<int>> pixels_1 = {{0, 1, 1}, {0, 1, 0}, {1, 1, 1}};
+    std::vector<std::vector<int>> pixels_2 = {{1, 0, 0}, {1, 1, 1}, {1, 0, 1}};
+    std::vector<std::vector<int>> pixels_3 = {{1, 1, 1}, {0, 1, 0}, {1, 1, 0}};
     Tile tileA = Tile(pixels_0);
     tileA.turnRight();
     ASSERT_EQ(tileA._pixels, pixels_1);
@@ -23,10 +23,10 @@ TEST(TileTest, TurnRightTest) {
 }
 
 TEST(TileTest, TurnDirectionTest) {
-    std::vector<std::vector<bool>> pixels_0 = {{1, 0, 1}, {1, 1, 1}, {0, 0, 1}};
-    std::vector<std::vector<bool>> pixels_1 = {{0, 1, 1}, {0, 1, 0}, {1, 1, 1}};
-    std::vector<std::vector<bool>> pixels_2 = {{1, 0, 0}, {1, 1, 1}, {1, 0, 1}};
-    std::vector<std::vector<bool>> pixels_3 = {{1, 1, 1}, {0, 1, 0}, {1, 1, 0}};
+    std::vector<std::vector<int>> pixels_0 = {{1, 0, 1}, {1, 1, 1}, {0, 0, 1}};
+    std::vector<std::vector<int>> pixels_1 = {{0, 1, 1}, {0, 1, 0}, {1, 1, 1}};
+    std::vector<std::vector<int>> pixels_2 = {{1, 0, 0}, {1, 1, 1}, {1, 0, 1}};
+    std::vector<std::vector<int>> pixels_3 = {{1, 1, 1}, {0, 1, 0}, {1, 1, 0}};
     Tile tileA = Tile(pixels_0);
     tileA.turnDirection(3);
     ASSERT_EQ(tileA._pixels, pixels_3);
@@ -39,41 +39,41 @@ TEST(TileTest, TurnDirectionTest) {
 }
 
 TEST(TileStructTest, TurnTypeTest) {
-    std::vector<std::vector<bool>> pixels_a0 = {{1, 0, 1},
+    std::vector<std::vector<int>> pixels_a0 = {{1, 0, 1},
                                                 {1, 1, 1},
                                                 {0, 0, 1}};
-    std::vector<std::vector<bool>> pixels_b0 = {{0, 1, 1},
+    std::vector<std::vector<int>> pixels_b0 = {{0, 1, 1},
                                                 {0, 1, 0},
                                                 {1, 1, 1}};
-    std::vector<std::vector<bool>> pixels_c0 = {{0, 1, 0},
+    std::vector<std::vector<int>> pixels_c0 = {{0, 1, 0},
                                                 {0, 1, 0},
                                                 {0, 0, 0}};
 
     Tile tileA = Tile(pixels_a0, 0);
     tileA.turnDirection(1);
-    std::vector<std::vector<bool>> pixels_a1 = tileA._pixels;
+    std::vector<std::vector<int>> pixels_a1 = tileA._pixels;
     tileA.turnDirection(2);
-    std::vector<std::vector<bool>> pixels_a2 = tileA._pixels;
+    std::vector<std::vector<int>> pixels_a2 = tileA._pixels;
     tileA.turnDirection(3);
-    std::vector<std::vector<bool>> pixels_a3 = tileA._pixels;
+    std::vector<std::vector<int>> pixels_a3 = tileA._pixels;
     tileA.turnDirection(0);
 
     Tile tileB = Tile(pixels_b0, 1);
     tileB.turnDirection(1);
-    std::vector<std::vector<bool>> pixels_b1 = tileB._pixels;
+    std::vector<std::vector<int>> pixels_b1 = tileB._pixels;
     tileB.turnDirection(2);
-    std::vector<std::vector<bool>> pixels_b2 = tileB._pixels;
+    std::vector<std::vector<int>> pixels_b2 = tileB._pixels;
     tileB.turnDirection(3);
-    std::vector<std::vector<bool>> pixels_b3 = tileB._pixels;
+    std::vector<std::vector<int>> pixels_b3 = tileB._pixels;
     tileB.turnDirection(0);
 
     Tile tileC = Tile(pixels_c0, 2);
     tileC.turnDirection(1);
-    std::vector<std::vector<bool>> pixels_c1 = tileC._pixels;
+    std::vector<std::vector<int>> pixels_c1 = tileC._pixels;
     tileC.turnDirection(2);
-    std::vector<std::vector<bool>> pixels_c2 = tileC._pixels;
+    std::vector<std::vector<int>> pixels_c2 = tileC._pixels;
     tileC.turnDirection(3);
-    std::vector<std::vector<bool>> pixels_c3 = tileC._pixels;
+    std::vector<std::vector<int>> pixels_c3 = tileC._pixels;
     tileC.turnDirection(0);
 
     std::vector<std::vector<Tile>> tiles = {{tileA, tileB}, {tileB, tileC}};
@@ -111,10 +111,10 @@ TEST(TileStructTest, TurnTypeTest) {
 }
 
 TEST(TileStructTest, TurnTileAroundTest) {
-    std::vector<std::vector<bool>> pixels_0 = {{1, 0, 1}, {1, 1, 1}, {0, 0, 1}};
-    std::vector<std::vector<bool>> pixels_1 = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
-    std::vector<std::vector<bool>> pixels_2 = {{1, 0, 0}, {1, 1, 1}, {1, 0, 1}};
-    std::vector<std::vector<bool>> pixels_3 = {{1, 1, 1}, {0, 1, 0}, {1, 1, 0}};
+    std::vector<std::vector<int>> pixels_0 = {{1, 0, 1}, {1, 1, 1}, {0, 0, 1}};
+    std::vector<std::vector<int>> pixels_1 = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}};
+    std::vector<std::vector<int>> pixels_2 = {{1, 0, 0}, {1, 1, 1}, {1, 0, 1}};
+    std::vector<std::vector<int>> pixels_3 = {{1, 1, 1}, {0, 1, 0}, {1, 1, 0}};
     Tile tileA = Tile(pixels_0, 0);
     Tile tileB = Tile(pixels_1, 0);
     Tile tileC = Tile(pixels_2, 1);

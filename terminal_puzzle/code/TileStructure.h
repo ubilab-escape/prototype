@@ -11,8 +11,10 @@ class TileStructure {
  public:
     // constructor
     explicit TileStructure(std::vector<std::vector<Tile>> tiles);
-    explicit TileStructure(std::vector<std::vector<bool>> pixels);
+    explicit TileStructure(std::vector<std::vector<int>> pixels);
 
+    void pixelsFromFile(const char* filepath);
+    void pixelsToTiles(std::vector<std::vector<int>> pixels);
     void turnTilesRight(int type);
     void turnTilesAround(int type);
     void printTypes();
