@@ -14,7 +14,7 @@ Rearrange an ascii picture by inserting different floppy disks which trigger dif
 
 
 ## Components
-|Component| In Stock| Buy Links|
+|Component| Already Bought?| Buy Links|
 |---------|:--------:|---------|
 |2 floppy reader|&#9744; | [Conrad](https://www.conrad.com/p/basetech-gen-144-floppy-disk-drive-usb-20-1170561) |
 |min 4-8 floppy disks|&#9745;| [Conrad](https://www.conrad.com/p/xlyne-9010000-blank-35-floppy-disk-144-mb-10-pcs-417512) |
