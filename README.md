@@ -18,6 +18,6 @@ Rearrange an ascii picture by inserting different floppy disks which trigger dif
 |---------|:--------:|---------|
 |1-4 floppy reader|&#9744; | [Conrad](https://www.conrad.com/p/basetech-gen-144-floppy-disk-drive-usb-20-1170561) |
 |min 4-8 floppy disks|&#9744; | [Conrad](https://www.conrad.com/p/xlyne-9010000-blank-35-floppy-disk-144-mb-10-pcs-417512) |
-|ESP8266|&#9744; | |
+|ESP8266|&#9744; | [Conrad](https://www.conrad.de/de/p/entwickler-platine-sbc-nodemcu-esp8266-1613301.html) |
 |HX711|&#9744;| [Conrad](https://www.conrad.de/de/p/sparkfun-load-cell-amplifier-hx711-for-weight-measurements-802236777.html), [Amazon](https://www.amazon.de/Ils-Module-Aluminum-Weighing-Arduino/dp/B0769FZ7NB/ref=sr_1_6?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&keywords=load+cell&qid=1573472255&sr=8-6) |
 |weight scale| &#9744; |[Conrad](https://www.conrad.de/de/p/sparkfun-mini-load-cell-100g-straight-bar-tal221-802236791.html) |
