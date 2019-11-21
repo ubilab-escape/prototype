@@ -3,11 +3,18 @@
 #include <ncurses.h>
 #include <unistd.h>
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include "./Tile.h"
 #include "./TileStructure.h"
 
+using namespace std;
+
 int main(int argc, char** argv) {
+  // init file
+  ifstream infile;
+  char data [1];
+
   // init TileStructure
   TileStructure tstruct = TileStructure("adidas.tex");
 
@@ -34,7 +41,11 @@ int main(int argc, char** argv) {
 
   // start loop
   while (true) {
+    //infile.open("test.txt");
     key = getch();
+    infile >> data;
+    //key = data[0];
+
     if (key == 27) break;
     if (key == 'a') {
         tstruct.turnTilesRight(0);
@@ -69,6 +80,8 @@ int main(int argc, char** argv) {
         clear();
     }
     tstruct.draw(5, 5);
+    infile.close();
+    //sleep(3);
     refresh();
     if (tstruct.solved()) {
         sleep(1);
@@ -81,4 +94,3 @@ int main(int argc, char** argv) {
   }
   endwin();
 }
-
