@@ -16,6 +16,13 @@
 
 using namespace std;
 
+void custom_print(char* s) {
+  //clear();
+  mvprintw(100, 5, s);
+  refresh();
+  //sleep(2);
+}
+
 inline bool exist_test (const std::string& name) {
   struct stat buffer;
   return (stat (name.c_str(), &buffer) == 0);
@@ -26,7 +33,7 @@ int main(int argc, char** argv) {
   ifstream infile;
   char data [1];
   // init mount points
-  const char* floppy_1 = "/media/floppy";
+  //const char* floppy_1 = "/media/floppy";
 
   // init TileStructure
   TileStructure tstruct = TileStructure("adidas_35.txt");
@@ -54,19 +61,19 @@ int main(int argc, char** argv) {
 
   FILE *fp;
   int status;
-  char sdd_msg[23];
+  char old_color [6];
+  char new_color [6];
+  char color [6];
 
-  char new_sdd_msg [23];
-  char old_sdd_msg [23];
+  fp = popen("sudo blkid /dev/sdc | grep -o LABEL.* | cut -d\\\" -f2", "r");
 
-  fp = popen("dmesg | grep \"sdd:\"", "r");
 
-  std::copy(std::begin(new_sdd_msg), std::end(new_sdd_msg), std::begin(old_sdd_msg));
-
-  while (fgets(sdd_msg, 23, fp) != NULL)
-      //printf("%s\n", sdd_msg);
-      std::copy(std::begin(sdd_msg), std::end(sdd_msg), std::begin(new_sdd_msg));
-      std::copy(std::begin(new_sdd_msg), std::end(new_sdd_msg), std::begin(old_sdd_msg));
+  while (fgets(color, 6, fp) != NULL) {
+    std::copy(std::begin(color), std::end(color), std::begin(new_color));
+    std::copy(std::begin(color), std::end(color), std::begin(old_color));
+    //custom_print(new_color);
+    //custom_print(old_color);
+  }
 
   // start loop
   while (true) {
@@ -76,65 +83,84 @@ int main(int argc, char** argv) {
     //key = data[0];
     FILE *fp;
     int status;
-    char sdd_msg[23];
 
 
-    fp = popen("dmesg | grep \"sdd:\"", "r");
+    fp = popen("sudo blkid /dev/sdc | grep -o LABEL.* | cut -d\\\" -f2", "r");
 
-    std::copy(std::begin(new_sdd_msg), std::end(new_sdd_msg), std::begin(old_sdd_msg));
+    std::copy(std::begin(new_color), std::end(new_color), std::begin(old_color));
+    if (fgets(color, 6, fp) != NULL) {
 
-    while (fgets(sdd_msg, 23, fp) != NULL)
-        //printf("%s\n", sdd_msg);
-        std::copy(std::begin(sdd_msg), std::end(sdd_msg), std::begin(new_sdd_msg));
+      std::copy(std::begin(color), std::end(color), std::begin(new_color));
+    }
+    else {
+      new_color[0] = 'X';
+      old_color[0] = 'X';
+    }
+    custom_print(new_color);
 
-    //printf(new_sdd_msg);
-    //printf(old_sdd_msg);
-    if (strcmp(new_sdd_msg, old_sdd_msg) != 0) {
+    if (strcmp(new_color, old_color) != 0) {
       //mount("/dev/sdd", floppy_1, "fat", 0, )
-      popen("mount -o umask=222 /dev/sdd /media/floppy", "r");
+      //popen("mount -o umask=222 /dev/sdd /media/floppy", "r");
+      //custom_print("test");
+      if (strcmp(new_color, "Rottt") == 0) {
+        tstruct.turnTilesRight(0);
+        clear();
+      }
+      else if (strcmp(new_color, "Gruen") == 0) {
+          tstruct.turnTilesRight(1);
+          clear();
+      }
+      else if (strcmp(new_color, "Blauu") == 0) {
+          tstruct.turnTilesRight(2);
+          clear();
+      }
+      else if (strcmp(new_color, "Gelbb") == 0) {
+          tstruct.turnTilesRight(3);
+          clear();
+      }
     }
 
     status = pclose(fp);
 
 
     //mount("/dev/sdd", floppy_1, "-o", 0, "");
-
-    if (key == 27) break;
-    if (/*key == 'a'*/exist_test("/media/floppy/rot.txt")) {
-        tstruct.turnTilesRight(0);
-        clear();
-    }
-    if (/*key == 's'*/exist_test("/media/floppy/gruen.txt")) {
-        tstruct.turnTilesRight(1);
-        clear();
-    }
-    if (/*key == 'd'*/exist_test("/media/floppy/blau.txt")) {
-        tstruct.turnTilesRight(2);
-        clear();
-    }
-    if (/*key == 'f'*/exist_test("/media/floppy/gelb.txt")) {
-        tstruct.turnTilesRight(3);
-        clear();
-    }
-    if (key == 'q') {
-        tstruct.turnTilesAround(0);
-        clear();
-    }
-    if (key == 'w') {
-        tstruct.turnTilesAround(1);
-        clear();
-    }
-    if (key == 'e') {
-        tstruct.turnTilesAround(2);
-        clear();
-    }
-    if (key == 'r') {
-        tstruct.turnTilesAround(3);
-        clear();
-    }
+    //
+    // if (key == 27) break;
+    // if (test_var == 1) {
+    //     tstruct.turnTilesRight(0);
+    //     clear();
+    // }
+    // if (/*key == 's'*/exist_test("/media/floppy/gruen.txt")) {
+    //     tstruct.turnTilesRight(1);
+    //     clear();
+    // }
+    // if (/*key == 'd'*/exist_test("/media/floppy/blau.txt")) {
+    //     tstruct.turnTilesRight(2);
+    //     clear();
+    // }
+    // if (/*key == 'f'*/exist_test("/media/floppy/gelb.txt")) {
+    //     tstruct.turnTilesRight(3);
+    //     clear();
+    // }
+    // if (key == 'q') {
+    //     tstruct.turnTilesAround(0);
+    //     clear();
+    // }
+    // if (key == 'w') {
+    //     tstruct.turnTilesAround(1);
+    //     clear();
+    // }
+    // if (key == 'e') {
+    //     tstruct.turnTilesAround(2);
+    //     clear();
+    // }
+    // if (key == 'r') {
+    //     tstruct.turnTilesAround(3);
+    //     clear();
+    // }
     tstruct.draw(5, 5);
     //infile.close();
-    umount2(floppy_1, MNT_FORCE);
+    //umount2(floppy_1, MNT_FORCE);
 
     data[0] = 0;
     //sleep(1);
