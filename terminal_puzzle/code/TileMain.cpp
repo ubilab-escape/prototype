@@ -11,6 +11,9 @@
 #include <sys/mount.h>
 #include <sys/syslog.h>
 #include <vector>
+#include <chrono>
+#include <thread>
+//#include "ctime"
 #include "./Tile.h"
 #include "./TileStructure.h"
 
@@ -81,44 +84,9 @@ int main(int argc, char** argv) {
 
   // start loop
   while (true) {
-    key = getch();
+    //key = getch();
     FILE *fp;
     int status;
-
-    fp = popen("sudo blkid /dev/sdc | grep -o LABEL.* | cut -d\\\" -f2", "r");
-
-    std::copy(std::begin(new_color), std::end(new_color), std::begin(old_color));
-    if (fgets(color, 6, fp) != NULL) {
-
-      std::copy(std::begin(color), std::end(color), std::begin(new_color));
-    }
-    else {
-      new_color[0] = 'X';
-      old_color[0] = 'X';
-    }
-    custom_print(new_color);
-
-    if (strcmp(new_color, old_color) != 0) {
-      //custom_print("test");
-      if (strcmp(new_color, "Rottt") == 0) {
-        tstruct.turnTilesRight(0);
-        clear();
-      }
-      else if (strcmp(new_color, "Gruen") == 0) {
-          tstruct.turnTilesRight(1);
-          clear();
-      }
-      else if (strcmp(new_color, "Blauu") == 0) {
-          tstruct.turnTilesRight(2);
-          clear();
-      }
-      else if (strcmp(new_color, "Gelbb") == 0) {
-          tstruct.turnTilesRight(3);
-          clear();
-      }
-    }
-
-    status = pclose(fp);
 
     // if (key == 27) break;
     // if (test_var == 1) {
@@ -137,25 +105,95 @@ int main(int argc, char** argv) {
     //     tstruct.turnTilesRight(3);
     //     clear();
     // }
-    if (key == 'q') {
-        tstruct.turnTilesAround(0);
-        clear();
-    }
-    if (key == 'w') {
-        tstruct.turnTilesAround(1);
-        clear();
-    }
-    if (key == 'e') {
-        tstruct.turnTilesAround(2);
-        clear();
-    }
-    if (key == 'r') {
-        tstruct.turnTilesAround(3);
-        clear();
-    }
-    tstruct.draw(5, 5);
+    // if (key == 'q') {
+    //     tstruct.turnTilesAround(0);
+    //     clear();
+    // }
+    // if (key == 'w') {
+    //     tstruct.turnTilesAround(1);
+    //     clear();
+    // }
+    // if (key == 'e') {
+    //     tstruct.turnTilesAround(2);
+    //     clear();
+    // }
+    // if (key == 'r') {
+    //     tstruct.turnTilesAround(3);
+    //     clear();
+    // }
+    // tstruct.draw(5, 5);
 
-    //sleep(1);
+    int counter = 0;
+
+    while (counter < 30) {
+      key = getch();
+      if (key == 'q') {
+          tstruct.turnTilesAround(0);
+          clear();
+      }
+      if (key == 'w') {
+          tstruct.turnTilesAround(1);
+          clear();
+      }
+      if (key == 'e') {
+          tstruct.turnTilesAround(2);
+          clear();
+      }
+      if (key == 'r') {
+          tstruct.turnTilesAround(3);
+          clear();
+      }
+
+      if (counter == 29) {
+        //time_t t1 = time(NULL);
+        fp = popen("sudo blkid /dev/sdc | grep -o LABEL.* | cut -d\\\" -f2", "r");
+
+        std::copy(std::begin(new_color), std::end(new_color), std::begin(old_color));
+        if (fgets(color, 6, fp) != NULL) {
+
+          std::copy(std::begin(color), std::end(color), std::begin(new_color));
+        }
+        else {
+          new_color[0] = 'X';
+          old_color[0] = 'X';
+        }
+        //custom_print(new_color);
+
+        //if (strcmp(new_color, old_color) != 0) {
+          //custom_print("test");
+        if (strcmp(new_color, "Rottt") == 0) {
+          tstruct.turnTilesRight(0);
+          clear();
+        }
+        else if (strcmp(new_color, "Gruen") == 0) {
+            tstruct.turnTilesRight(1);
+            clear();
+        }
+        else if (strcmp(new_color, "Blauu") == 0) {
+            tstruct.turnTilesRight(2);
+            clear();
+        }
+        else if (strcmp(new_color, "Gelbb") == 0) {
+            tstruct.turnTilesRight(3);
+            clear();
+        }
+        //}
+
+        status = pclose(fp);
+        //time_t t2 = time(NULL);
+        //endwin();
+
+        //cout << t2-t1;
+        sleep(3);
+
+      }
+      tstruct.draw(5, 5);
+      refresh();
+      this_thread::sleep_for(chrono::microseconds(100));
+      counter++;
+
+    }
+    //sleep(3);
     refresh();
     if (tstruct.solved()) {
         sleep(1);
