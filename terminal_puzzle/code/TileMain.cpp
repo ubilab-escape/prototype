@@ -29,6 +29,16 @@ inline bool exist_test (const std::string& name) {
 }
 
 int main(int argc, char** argv) {
+  //init window size
+  system("/usr/bin/xvkbd -text \"\\C-\"");
+  system("/usr/bin/xvkbd -text \"\\C-\"");
+  system("/usr/bin/xvkbd -text \"\\C-\"");
+  system("/usr/bin/xvkbd -text \"\\C-\"");
+  system("/usr/bin/xvkbd -text \"\\C-\"");
+  system("/usr/bin/xvkbd -text \"\\C-\"");
+  sleep(1);
+  system("/usr/bin/xvkbd -text \"\\[F11]\"");
+
   // init TileStructure
   TileStructure tstruct = TileStructure("adidas_35.txt");
 
