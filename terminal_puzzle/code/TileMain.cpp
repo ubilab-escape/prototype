@@ -29,12 +29,6 @@ inline bool exist_test (const std::string& name) {
 }
 
 int main(int argc, char** argv) {
-  // init file
-  ifstream infile;
-  char data [1];
-  // init mount points
-  //const char* floppy_1 = "/media/floppy";
-
   // init TileStructure
   TileStructure tstruct = TileStructure("adidas_35.txt");
 
@@ -77,13 +71,9 @@ int main(int argc, char** argv) {
 
   // start loop
   while (true) {
-    //infile.open("/media/floppy/test.txt");
-    //key = getch();
-    //infile >> data;
-    //key = data[0];
+    key = getch();
     FILE *fp;
     int status;
-
 
     fp = popen("sudo blkid /dev/sdc | grep -o LABEL.* | cut -d\\\" -f2", "r");
 
@@ -99,8 +89,6 @@ int main(int argc, char** argv) {
     custom_print(new_color);
 
     if (strcmp(new_color, old_color) != 0) {
-      //mount("/dev/sdd", floppy_1, "fat", 0, )
-      //popen("mount -o umask=222 /dev/sdd /media/floppy", "r");
       //custom_print("test");
       if (strcmp(new_color, "Rottt") == 0) {
         tstruct.turnTilesRight(0);
@@ -122,9 +110,6 @@ int main(int argc, char** argv) {
 
     status = pclose(fp);
 
-
-    //mount("/dev/sdd", floppy_1, "-o", 0, "");
-    //
     // if (key == 27) break;
     // if (test_var == 1) {
     //     tstruct.turnTilesRight(0);
@@ -142,27 +127,24 @@ int main(int argc, char** argv) {
     //     tstruct.turnTilesRight(3);
     //     clear();
     // }
-    // if (key == 'q') {
-    //     tstruct.turnTilesAround(0);
-    //     clear();
-    // }
-    // if (key == 'w') {
-    //     tstruct.turnTilesAround(1);
-    //     clear();
-    // }
-    // if (key == 'e') {
-    //     tstruct.turnTilesAround(2);
-    //     clear();
-    // }
-    // if (key == 'r') {
-    //     tstruct.turnTilesAround(3);
-    //     clear();
-    // }
+    if (key == 'q') {
+        tstruct.turnTilesAround(0);
+        clear();
+    }
+    if (key == 'w') {
+        tstruct.turnTilesAround(1);
+        clear();
+    }
+    if (key == 'e') {
+        tstruct.turnTilesAround(2);
+        clear();
+    }
+    if (key == 'r') {
+        tstruct.turnTilesAround(3);
+        clear();
+    }
     tstruct.draw(5, 5);
-    //infile.close();
-    //umount2(floppy_1, MNT_FORCE);
 
-    data[0] = 0;
     //sleep(1);
     refresh();
     if (tstruct.solved()) {
