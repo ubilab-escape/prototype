@@ -33,12 +33,12 @@ inline bool exist_test (const std::string& name) {
 
 int main(int argc, char** argv) {
   //init window size
-  system("/usr/bin/xvkbd -text \"\\C-\"");
-  system("/usr/bin/xvkbd -text \"\\C-\"");
-  system("/usr/bin/xvkbd -text \"\\C-\"");
-  system("/usr/bin/xvkbd -text \"\\C-\"");
-  system("/usr/bin/xvkbd -text \"\\C-\"");
-  system("/usr/bin/xvkbd -text \"\\C-\"");
+  system("/usr/bin/xvkbd -text \"\\C\\S_\"");
+  system("/usr/bin/xvkbd -text \"\\C\\S_\"");
+  system("/usr/bin/xvkbd -text \"\\C\\S_\"");
+  system("/usr/bin/xvkbd -text \"\\C\\S_\"");
+  system("/usr/bin/xvkbd -text \"\\C\\S_\"");
+  system("/usr/bin/xvkbd -text \"\\C\\S_\"");
   sleep(1);
   system("/usr/bin/xvkbd -text \"\\[F11]\"");
 
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
   char new_color [6];
   char color [6];
 
-  fp = popen("sudo blkid /dev/sdc | grep -o LABEL.* | cut -d\\\" -f2", "r");
+  fp = popen("sudo blkid /dev/sda | grep -o LABEL.* | cut -d\\\" -f2", "r");
 
 
   while (fgets(color, 6, fp) != NULL) {
@@ -146,7 +146,7 @@ int main(int argc, char** argv) {
 
       if (counter == 29) {
         //time_t t1 = time(NULL);
-        fp = popen("sudo blkid /dev/sdc | grep -o LABEL.* | cut -d\\\" -f2", "r");
+        fp = popen("sudo blkid /dev/sda | grep -o LABEL.* | cut -d\\\" -f2", "r");
 
         std::copy(std::begin(new_color), std::end(new_color), std::begin(old_color));
         if (fgets(color, 6, fp) != NULL) {
