@@ -39,8 +39,9 @@ int main(int argc, char** argv) {
   system("/usr/bin/xvkbd -text \"\\C\\S_\"");
   system("/usr/bin/xvkbd -text \"\\C\\S_\"");
   system("/usr/bin/xvkbd -text \"\\C\\S_\"");
+  system("/usr/bin/xvkbd -text \"\\C\\S_\"");
+  system("/usr/bin/xvkbd -text \"\\C\\S_\"");
   sleep(1);
-  system("/usr/bin/xvkbd -text \"\\[F11]\"");
 
   // init TileStructure
   TileStructure tstruct = TileStructure("adidas_35.txt");
@@ -60,20 +61,30 @@ int main(int argc, char** argv) {
   refresh();
   sleep(2);
 
-  // shuffle and show shuffeled TileStruct
-  tstruct.shuffle();
-  clear();
-  tstruct.draw(5, 5);
-  refresh();
-
   FILE *fp;
   int status;
   char old_color [6];
   char new_color [6];
   char color [6];
 
-  fp = popen("sudo blkid /dev/sda | grep -o LABEL.* | cut -d\\\" -f2", "r");
+  while (true){
+    fp = popen("sudo blkid /dev/sdc | grep -o LABEL.* | cut -d\\\" -f2", "r");
+    fgets(color, 6, fp);
 
+    if ((strcmp(color, "Rottt") == 0) || (strcmp(color, "Blauu") == 0) || (strcmp(color, "Gelbb") == 0) || (strcmp(color, "Gruen") == 0)){
+      // shuffle and show shuffeled TileStruct
+      /*clear();
+      tstruct.draw(5, 5);
+      refresh();
+      sleep(2);*/
+
+      tstruct.shuffle();
+      clear();
+      tstruct.draw(5, 5);
+      refresh();
+      break;
+    }
+  }
 
   while (fgets(color, 6, fp) != NULL) {
     std::copy(std::begin(color), std::end(color), std::begin(new_color));
@@ -85,8 +96,8 @@ int main(int argc, char** argv) {
   // start loop
   while (true) {
     //key = getch();
-    FILE *fp;
-    int status;
+    //FILE *fp;
+    //int status;
 
     // if (key == 27) break;
     // if (test_var == 1) {
@@ -146,7 +157,7 @@ int main(int argc, char** argv) {
 
       if (counter == 29) {
         //time_t t1 = time(NULL);
-        fp = popen("sudo blkid /dev/sda | grep -o LABEL.* | cut -d\\\" -f2", "r");
+        fp = popen("sudo blkid /dev/sdc | grep -o LABEL.* | cut -d\\\" -f2", "r");
 
         std::copy(std::begin(new_color), std::end(new_color), std::begin(old_color));
         if (fgets(color, 6, fp) != NULL) {
@@ -184,7 +195,7 @@ int main(int argc, char** argv) {
         //endwin();
 
         //cout << t2-t1;
-        sleep(3);
+        this_thread::sleep_for(chrono::milliseconds(1600));
 
       }
       tstruct.draw(5, 5);
