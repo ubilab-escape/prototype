@@ -61,23 +61,30 @@ int main(int argc, char** argv) {
   refresh();
   sleep(2);
 
-  FILE *fp;
+  FILE *fp_a;
+  FILE *fp_b;
   int status;
-  char old_color [6];
-  char new_color [6];
-  char color [6];
+  char old_color_a [6];
+  char new_color_a [6];
+  char color_a [6];
+  char old_color_b [6];
+  char new_color_b [6];
+  char color_b [6];
 
   while (true){
-    fp = popen("sudo blkid /dev/sdc | grep -o LABEL.* | cut -d\\\" -f2", "r");
-    fgets(color, 6, fp);
+    fp_a = popen("sudo blkid /dev/sda | grep -o LABEL.* | cut -d\\\" -f2", "r");
+    fgets(color_a, 6, fp_a);
+    fp_b = popen("sudo blkid /dev/sdb | grep -o LABEL.* | cut -d\\\" -f2", "r");
+    fgets(color_b, 6, fp_b);
 
-    if ((strcmp(color, "Rottt") == 0) || (strcmp(color, "Blauu") == 0) || (strcmp(color, "Gelbb") == 0) || (strcmp(color, "Gruen") == 0)){
-      // shuffle and show shuffeled TileStruct
-      /*clear();
+    if ((strcmp(color_a, "Rottt") == 0) || (strcmp(color_a, "Blauu") == 0) || (strcmp(color_a, "Gelbb") == 0) || (strcmp(color_a, "Gruen") == 0)){
+      tstruct.shuffle();
+      clear();
       tstruct.draw(5, 5);
       refresh();
-      sleep(2);*/
-
+      break;
+    }
+    else if ((strcmp(color_b, "Rottt") == 0) || (strcmp(color_b, "Blauu") == 0) || (strcmp(color_b, "Gelbb") == 0) || (strcmp(color_b, "Gruen") == 0)){
       tstruct.shuffle();
       clear();
       tstruct.draw(5, 5);
@@ -86,17 +93,18 @@ int main(int argc, char** argv) {
     }
   }
 
-  while (fgets(color, 6, fp) != NULL) {
-    std::copy(std::begin(color), std::end(color), std::begin(new_color));
-    std::copy(std::begin(color), std::end(color), std::begin(old_color));
+ /* TODO DELETE
+  * while (fgets(color_a, 6, fp_a) != NULL) {
+    std::copy(std::begin(color_a), std::end(color_a), std::begin(new_color_a));
+    std::copy(std::begin(color_a), std::end(color_a), std::begin(old_color_a));
     //custom_print(new_color);
     //custom_print(old_color);
-  }
+  }*/
 
   // start loop
   while (true) {
     //key = getch();
-    //FILE *fp;
+    //FILE *fp_a;
     //int status;
 
     // if (key == 27) break;
@@ -137,74 +145,84 @@ int main(int argc, char** argv) {
     int counter = 0;
 
     while (counter < 30) {
-      key = getch();
-      if (key == 'q') {
-          tstruct.turnTilesAround(0);
-          clear();
-      }
-      if (key == 'w') {
-          tstruct.turnTilesAround(1);
-          clear();
-      }
-      if (key == 'e') {
-          tstruct.turnTilesAround(2);
-          clear();
-      }
-      if (key == 'r') {
-          tstruct.turnTilesAround(3);
-          clear();
-      }
-
-      if (counter == 29) {
-        //time_t t1 = time(NULL);
-        fp = popen("sudo blkid /dev/sdc | grep -o LABEL.* | cut -d\\\" -f2", "r");
-
-        std::copy(std::begin(new_color), std::end(new_color), std::begin(old_color));
-        if (fgets(color, 6, fp) != NULL) {
-
-          std::copy(std::begin(color), std::end(color), std::begin(new_color));
+      
+      if (counter == 15) {
+        fp_b = popen("sudo blkid /dev/sdb | grep -o LABEL.* | cut -d\\\" -f2", "r");
+      
+        std::copy(std::begin(new_color_b), std::end(new_color_b), std::begin(old_color_b));
+      
+        if (fgets(color_b, 6, fp_b) != NULL) {
+          std::copy(std::begin(color_b), std::end(color_b), std::begin(new_color_b));
         }
         else {
-          new_color[0] = 'X';
-          old_color[0] = 'X';
+          new_color_b[0] = 'X';
+          old_color_b[0] = 'X';
+        }
+        
+        if (strcmp(new_color_b, "Rottt") == 0) {
+          tstruct.turnTilesAround(0);
+          clear();
+        }
+        else if (strcmp(new_color_b, "Gruen") == 0) {
+          tstruct.turnTilesAround(1);
+          clear();
+        }
+        else if (strcmp(new_color_b, "Blauu") == 0) {
+          tstruct.turnTilesAround(2);
+         clear();
+        }
+        else if (strcmp(new_color_b, "Gelbb") == 0) {
+          tstruct.turnTilesAround(3);
+          clear();
+        }
+        status = pclose(fp_b);
+        
+        //this_thread::sleep_for(chrono::milliseconds(800));
+      }
+      
+      if (counter == 29) {
+        fp_a = popen("sudo blkid /dev/sda | grep -o LABEL.* | cut -d\\\" -f2", "r");
+
+        std::copy(std::begin(new_color_a), std::end(new_color_a), std::begin(old_color_a));
+        if (fgets(color_a, 6, fp_a) != NULL) {
+
+          std::copy(std::begin(color_a), std::end(color_a), std::begin(new_color_a));
+        }
+        else {
+          new_color_a[0] = 'X';
+          old_color_a[0] = 'X';
         }
         //custom_print(new_color);
 
         //if (strcmp(new_color, old_color) != 0) {
           //custom_print("test");
-        if (strcmp(new_color, "Rottt") == 0) {
+        if (strcmp(new_color_a, "Rottt") == 0) {
           tstruct.turnTilesRight(0);
           clear();
         }
-        else if (strcmp(new_color, "Gruen") == 0) {
+        else if (strcmp(new_color_a, "Gruen") == 0) {
             tstruct.turnTilesRight(1);
             clear();
         }
-        else if (strcmp(new_color, "Blauu") == 0) {
+        else if (strcmp(new_color_a, "Blauu") == 0) {
             tstruct.turnTilesRight(2);
             clear();
         }
-        else if (strcmp(new_color, "Gelbb") == 0) {
+        else if (strcmp(new_color_a, "Gelbb") == 0) {
             tstruct.turnTilesRight(3);
             clear();
         }
         //}
+        status = pclose(fp_a);
 
-        status = pclose(fp);
-        //time_t t2 = time(NULL);
-        //endwin();
-
-        //cout << t2-t1;
         this_thread::sleep_for(chrono::milliseconds(1600));
-
       }
       tstruct.draw(5, 5);
       refresh();
       this_thread::sleep_for(chrono::microseconds(100));
       counter++;
-
     }
-    //sleep(3);
+    
     refresh();
     if (tstruct.solved()) {
         sleep(1);
