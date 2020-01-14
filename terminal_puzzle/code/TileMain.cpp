@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
 
     while (fgets(buffer, 120, fp_a) != NULL){
       pclose(fp_a);
-      if(strstr(buffer, "\/dev\/sd") != NULL) {
+      if(strstr(buffer, "/dev/sd") != NULL) {
         tstruct.shuffle();
         clear();
         tstruct.draw(5, 5);
@@ -77,18 +77,20 @@ int main(int argc, char** argv) {
     bool sda_found = false;
     bool sdb_found = false;
     while (fgets(buffer, 120, fp_a) != NULL){
-      if(strstr(buffer, "Killed")) {
-        FILE *reset_usb_process = popen("sudo timeout -s SIGSTOP 3 uhubctl -a off -p 2", "r");
-        pclose(reset_usb_process);
-      }
-      if(strstr(buffer, "\/dev\/sda") != NULL) {
+      if(strstr(buffer, "Killed")||strstr(buffer, "SIGKILL")) {
+	      FILE *reset_usb_process = popen("sudo timeout -s SIGSTOP 3 uhubctl -a off -p 2", "r");
+	      char second_buffer [120];
+	      while(fgets(second_buffer, 120, reset_usb_process) != NULL);
+         pclose(reset_usb_process);
+        }
+      if(strstr(buffer, "/dev/sda") != NULL) {
         sda_found = true;
       }
       else if(sda_found) {
         sda_id = buffer[26] - '0';
         sda_found = false;
       }
-      else if(strstr(buffer, "\/dev\/sdb") != NULL) {
+      else if(strstr(buffer, "/dev/sdb") != NULL) {
         sdb_found = true;
       }
       else if(sdb_found) {
