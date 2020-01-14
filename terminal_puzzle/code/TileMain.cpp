@@ -49,9 +49,8 @@ int main(int argc, char** argv) {
 
   // puzzle activation
   bool puzzle_active = false;
-  while (!puzzle_active){
-
-    FILE *fp_a = popen("sudo fdisk -l | grep \"\/dev\/sd\\|Disk identifier: 0x00\"", "r");
+  while (!puzzle_active){    
+    FILE *fp_a = popen("sudo ./check_floppy.sh 2>&1", "r");
     char buffer [120];
 
     while (fgets(buffer, 120, fp_a) != NULL){
@@ -71,14 +70,17 @@ int main(int argc, char** argv) {
   while (true) {
 
     auto t1 = std::chrono::high_resolution_clock::now();
-
-    FILE *fp_a = popen("sudo fdisk -l | grep \"\/dev\/sd\\|Disk identifier: 0x00\"", "r");
+    FILE *fp_a = popen("sudo ./check_floppy.sh 2>&1", "r");
     char buffer [120];
     int sda_id = -1;
     int sdb_id = -1;
     bool sda_found = false;
     bool sdb_found = false;
     while (fgets(buffer, 120, fp_a) != NULL){
+      if(strstr(buffer, "Killed")) {
+        FILE *reset_usb_process = popen("sudo timeout -s SIGSTOP 3 uhubctl -a off -p 2", "r");
+        pclose(reset_usb_process);
+      }
       if(strstr(buffer, "\/dev\/sda") != NULL) {
         sda_found = true;
       }
@@ -94,8 +96,10 @@ int main(int argc, char** argv) {
         sdb_found = false;
       }
     }
-
+    
+    
     pclose(fp_a);
+
     if(sda_id != -1) {
       tstruct.turnTilesRight(sda_id);
       clear();
