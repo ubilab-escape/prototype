@@ -52,18 +52,23 @@ int main(int argc, char** argv) {
   while (!puzzle_active){    
     FILE *fp_a = popen("sudo ./check_floppy.sh 2>&1", "r");
     char buffer [120];
-
+    bool sd_found = false;
     while (fgets(buffer, 120, fp_a) != NULL){
-      pclose(fp_a);
       if(strstr(buffer, "/dev/sd") != NULL) {
-        tstruct.shuffle();
-        clear();
-        tstruct.draw(5, 5);
-        refresh();
-        puzzle_active = true;
-        break;
+        sd_found = true;
+      }
+      else if (sd_found) { 
+        if(buffer[26] != '0') {
+          tstruct.shuffle();
+          clear();
+          tstruct.draw(5, 5);
+          refresh();
+          puzzle_active = true;
+          break;
+        }
       }
     }
+    pclose(fp_a);
   }
 
   // start loop
@@ -102,20 +107,20 @@ int main(int argc, char** argv) {
     
     pclose(fp_a);
 
-    if(sda_id != -1) {
-      tstruct.turnTilesRight(sda_id);
+    if(sda_id != 0) {
+      tstruct.turnTilesRight(sda_id % 4);
       clear();
     }
 
-    if(sdb_id != -1) {
-      tstruct.turnTilesAround(sdb_id);
+    if(sdb_id != 0) {
+      tstruct.turnTilesAround(sdb_id % 4);
       clear();
     }
 
     auto t2 = std::chrono::high_resolution_clock::now();
        
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
-    auto sleep_duration = 1000000-duration;
+    auto sleep_duration = 2000000-duration;
     if (sleep_duration > 0) {
       usleep(sleep_duration);
     }
@@ -124,7 +129,7 @@ int main(int argc, char** argv) {
     refresh();    
     
     if (tstruct.solved()) {
-      sleep(1);
+      sleep(3);
       clear();
       mvprintw(5, 5, "YOU SOLVED IT");
       refresh();
