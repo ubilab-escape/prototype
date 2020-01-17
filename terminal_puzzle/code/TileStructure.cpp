@@ -151,6 +151,7 @@ void TileStructure::draw(int posX, int posY) {
     init_pair(2, COLOR_GREEN, -1);
     init_pair(3, COLOR_BLUE, -1);
     init_pair(4, COLOR_YELLOW, -1);
+    init_pair(5, COLOR_MAGENTA, -1);
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
             attron(COLOR_PAIR(_tiles[i][j]._type + 1));
@@ -179,6 +180,16 @@ void TileStructure::shuffle() {
 // bool: checks if Tile equals its initial state.
 bool TileStructure::solved() {
     return _tiles == _initial_tiles;
+}
+
+// function: change the type (and therefore color) of all the tiles.
+void TileStructure::colorWhite() {
+    int N = _tiles.size();
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            _tiles[i][j]._type = 4;
+        }
+    }
 }
 
 // friend function: Use the output stream to print out TileStruct pixels.

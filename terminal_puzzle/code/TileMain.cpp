@@ -129,10 +129,9 @@ int main(int argc, char** argv) {
     refresh();    
     
     if (tstruct.solved()) {
-      sleep(3);
-      clear();
-      mvprintw(5, 5, "YOU SOLVED IT");
-      refresh();
+      tstruct.colorWhite();
+      tstruct.draw(5, 5);
+      refresh(); 
       sleep(5);
       break;
     }
