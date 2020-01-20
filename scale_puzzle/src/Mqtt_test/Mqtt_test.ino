@@ -38,7 +38,7 @@ StaticJsonDocument<300> rxdoc;
 StaticJsonDocument<100> doc;
 
 const char* mqtt_topic = "6/puzzle/scale";
-char* JSONMessageBuffer = " \{  \"method\":  \"Test\",  \"state\": \"active\",  \"data\": \"on\", \}";
+char* JSONMessageBuffer = "{\"method\":\"STATUS\",\"state\":\"active\"}";
 
 void calibration_loop();
 
@@ -71,8 +71,9 @@ void loop() {
     reconnect();
   }
   client.loop();
-  serializeJson(doc, JSONMessageBuffer, 100);
+  //serializeJson(doc, JSONMessageBuffer, 100);
   value = client.publish(mqtt_topic, JSONMessageBuffer, true);
+  delay(3000);
   Serial.printf("MQTT Return: %d\n", value);
   // check scale
   // long reading = 0;
