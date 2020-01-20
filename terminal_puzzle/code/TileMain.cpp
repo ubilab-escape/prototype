@@ -83,11 +83,14 @@ int main(int argc, char** argv) {
     bool sdb_found = false;
     while (fgets(buffer, 120, fp_a) != NULL){
       if(strstr(buffer, "Killed")||strstr(buffer, "SIGKILL")) {
-	      FILE *reset_usb_process = popen("sudo timeout -s SIGSTOP 3 uhubctl -a off -p 2", "r");
+		//custom_print("restart floppy");
+	      FILE *reset_usb_process = popen("sudo timeout -s SIGKILL 3 uhubctl -a off -p 2", "r");
 	      char second_buffer [120];
-	      while(fgets(second_buffer, 120, reset_usb_process) != NULL);
-         pclose(reset_usb_process);
-        }
+	      //while(fgets(second_buffer, 120, reset_usb_process) != NULL);
+      	      pclose(reset_usb_process);
+		//custom_print("restart finished");
+		break;
+      }
       if(strstr(buffer, "/dev/sda") != NULL) {
         sda_found = true;
       }
