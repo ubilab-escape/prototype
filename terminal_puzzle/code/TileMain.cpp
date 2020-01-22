@@ -31,6 +31,18 @@ inline bool exist_test (const std::string& name) {
 }
 
 int main(int argc, char** argv) {
+  system("/usr/bin/xvkbd -text \"\\C-\"");
+  system("/usr/bin/xvkbd -text \"\\C-\"");  
+  system("/usr/bin/xvkbd -text \"\\C-\"");  
+  system("/usr/bin/xvkbd -text \"\\C-\"");  
+  system("/usr/bin/xvkbd -text \"\\C-\"");  
+  system("/usr/bin/xvkbd -text \"\\C-\"");  
+  system("/usr/bin/xvkbd -text \"\\C-\"");  
+  system("/usr/bin/xvkbd -text \"\\C-\"");  
+  system("/usr/bin/xvkbd -text \"\\C-\"");  
+
+
+
   // init TileStructure
   TileStructure tstruct = TileStructure("STASIS.txt");
 
@@ -139,5 +151,6 @@ int main(int argc, char** argv) {
       break;
     }
   }
-  endwin();
+  //endwin();
+  while(1);
 }
