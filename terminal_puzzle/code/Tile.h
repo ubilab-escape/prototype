@@ -16,6 +16,7 @@ class Tile {
     void turnPixelsRight();
     void printPixels();
     void draw(int posX, int posY);
+    int size();
     int _direction;
     std::vector<std::vector<int>> _pixels;
     int _type;

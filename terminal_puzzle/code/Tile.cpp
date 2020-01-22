@@ -28,6 +28,10 @@ Tile::Tile(std::vector<std::vector<int>> pixels, int type) {
     _type = type;
 }
 
+//int: returns the sidelength of square Tile
+int Tile::size() {
+    return _pixels.size();
+}
 
 // function: Turns the 2D pixel vector of the Tile right.
 void Tile::turnPixelsRight() {

@@ -24,6 +24,7 @@ class TileStructure {
     bool solved();
     void draw(int posX, int posY);
     void colorWhite();
+    int size(); 
     friend std::ostream & operator<< (std::ostream &out,
                          const TileStructure &tileStruct);
     friend bool operator== (const TileStructure &tstruct1,
