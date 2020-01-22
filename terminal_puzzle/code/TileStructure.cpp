@@ -37,6 +37,11 @@ TileStructure::TileStructure(const char* filepath) {
     _initial_tiles = _tiles;
 }
 
+// int: get side length of the square Tilestruct
+int TileStructure::size() {
+    return 4*_tiles[0][0].size();
+}
+
 // function: changes _pixels to new 2D pixel array from 2D pixel vector.
 void TileStructure::pixelsToTiles(std::vector<std::vector<int>> pixels) {
     int N = 4;

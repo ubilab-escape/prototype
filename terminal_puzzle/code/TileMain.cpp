@@ -25,21 +25,28 @@ void custom_print(char* s) {
   sleep(2);
 }
 
+void custom_print(int i) {
+  std::string s = std::to_string(i);
+  char const *c = s.c_str();
+  clear();
+  mvprintw(0, 0, c);
+  refresh();
+  sleep(2);
+}
+
+
 inline bool exist_test (const std::string& name) {
   struct stat buffer;
   return (stat (name.c_str(), &buffer) == 0);
 }
 
+void zoom_out(int level) {
+    for (int i = 0; i < level; i++) {
+        system("/usr/bin/xvkbd -text \"\\C-\"");
+    }
+}
+
 int main(int argc, char** argv) {
-  system("/usr/bin/xvkbd -text \"\\C-\"");
-  system("/usr/bin/xvkbd -text \"\\C-\"");  
-  system("/usr/bin/xvkbd -text \"\\C-\"");  
-  system("/usr/bin/xvkbd -text \"\\C-\"");  
-  system("/usr/bin/xvkbd -text \"\\C-\"");  
-  system("/usr/bin/xvkbd -text \"\\C-\"");  
-  system("/usr/bin/xvkbd -text \"\\C-\"");  
-  system("/usr/bin/xvkbd -text \"\\C-\"");  
-  system("/usr/bin/xvkbd -text \"\\C-\"");  
 
 
 
@@ -47,16 +54,22 @@ int main(int argc, char** argv) {
   TileStructure tstruct = TileStructure("STASIS.txt");
 
   // ncurses init stuff
+  int width, height;
   initscr();
+  getmaxyx(stdscr, height, width);
+  int POSX = width/2 - tstruct.size()/2;
+  int POSY = height/2 - tstruct.size()/2;
   cbreak();
   noecho();
   curs_set(false);
   nodelay(stdscr, true);
   keypad(stdscr, true);
 
+
+  custom_print(tstruct.size());
   // show TileStruct before shuffeled
   clear();
-  tstruct.draw(5, 5);
+  tstruct.draw(POSX, POSY);
   refresh();
 
   // puzzle activation
@@ -73,7 +86,7 @@ int main(int argc, char** argv) {
         if(buffer[26] != '0') {
           tstruct.shuffle();
           clear();
-          tstruct.draw(5, 5);
+          tstruct.draw(POSX, POSY);
           refresh();
           puzzle_active = true;
           break;
@@ -125,11 +138,15 @@ int main(int argc, char** argv) {
     if(sda_id != 0) {
       tstruct.turnTilesRight(sda_id % 4);
       clear();
+      tstruct.draw(POSX, POSY);
+      refresh();    
     }
 
     if(sdb_id != 0) {
       tstruct.turnTilesAround(sdb_id % 4);
       clear();
+      tstruct.draw(POSX, POSY);
+      refresh();    
     }
 
     auto t2 = std::chrono::high_resolution_clock::now();
@@ -140,14 +157,11 @@ int main(int argc, char** argv) {
       usleep(sleep_duration);
     }
 
-    tstruct.draw(5, 5);
-    refresh();    
     
     if (tstruct.solved()) {
       tstruct.colorWhite();
-      tstruct.draw(5, 5);
+      tstruct.draw(POSX, POSY);
       refresh(); 
-      sleep(5);
       break;
     }
   }
