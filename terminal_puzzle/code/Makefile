@@ -34,7 +34,7 @@ svclean:
 
 
 %Main: %Main.o $(OBJECTS)
-	$(CXX) -o $@ $^ $(LIBRARIES) -lncurses
+	$(CXX) -o $@ $^ $(LIBRARIES) -lncurses -lpaho-mqtt3c
 
 %Test: %Test.o $(OBJECTS)
 	$(CXX) -o $@ $^ $(LIBRARIES) -lncurses -lgtest -lgtest_main -pthread
