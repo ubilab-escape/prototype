@@ -18,7 +18,7 @@
 #include "MQTTClient.h"
 
 #define ADDRESS     "10.0.0.2:1883"
-#define CLIENTID    "6_puzzle_terminal"
+#define CLIENTID    "raspberry-terminal"
 #define TOPIC       "6/puzzle/terminal"
 #define QOS         1
 #define TIMEOUT     10000L
@@ -55,41 +55,43 @@ void zoom_out(int level) {
     }
 }
 
+void publish_state(string str, MQTTClient* cl) {
+  MQTTClient_message pubmsg = MQTTClient_message_initializer;
+  MQTTClient_deliveryToken token;
+  str = "{\"method\":\"status\",\"state\":\"" + str + "\",\"data\":\"" + str + "\"}";
+  char* msg = strdup(str.c_str());
+  pubmsg.payload = (void*)msg; 
+  pubmsg.payloadlen = strlen(msg);
+  pubmsg.qos = QOS;
+  pubmsg.retained = 1;
+  MQTTClient_publishMessage(*cl, TOPIC, &pubmsg, &token);
+  MQTTClient_waitForCompletion(*cl, token, TIMEOUT);
+  free(msg);
+}
+
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message)
 {
-    int i;
-    char* payloadptr;
-
-    custom_print("Message arrived\n     topic: \n");
-    custom_print(topicName);
-
-    payloadptr = (char*)message->payload;
-    for(i=0; i<message->payloadlen; i++)
-    {
-        custom_print(*payloadptr++);
-    }
-    custom_print('\n');
+    string msg = (char*)message->payload;
+    // custom_print((char*)message->payload);
+    
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
+    
     return 1;
 }
 
+MQTTClient client;
+  MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
 void connlost(void *context, char *cause)
 {
     printf("\nConnection lost\n");
-    printf("     cause: %s\n", cause);
+    while(MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS);
 }
-
 int main(int argc, char** argv) {
 
   // init mqtt
-  MQTTClient client;
-  MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
-  MQTTClient_message pubmsg = MQTTClient_message_initializer;
-  MQTTClient_deliveryToken token;
-  MQTTClient_create(&client, ADDRESS, CLIENTID,
-      MQTTCLIENT_PERSISTENCE_NONE, NULL);
-  conn_opts.keepAliveInterval = 20;
+  MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
+  conn_opts.keepAliveInterval = 10;
   conn_opts.cleansession = 1;
 
   MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, NULL);
@@ -99,25 +101,11 @@ int main(int argc, char** argv) {
   {
       printf("Failed to connect, return code %d\n", rc);
       exit(-1);
-      return 1;
   }
 
   MQTTClient_subscribe(client, TOPIC, QOS);
 
-  //pubmsg.payload = payload;
-  //pubmsg.payloadlen = strlen(payload);
-  //pubmsg.qos = QOS;
-  //pubmsg.retained = 0;
-  //MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token);
-  //printf("Waiting for up to %d seconds for publication of %s\n"
-  //        "on topic %s for client with ClientID: %s\n",
-  //        (int)(TIMEOUT/1000),  payload, TOPIC, CLIENTID);
-  //rc = MQTTClient_waitForCompletion(client, token, TIMEOUT);
-  //printf("Message with delivery token %d delivered\n", token);
-  //sleep(20);
-
-  //MQTTClient_disconnect(client, 10000);
-  //MQTTClient_destroy(&client); 
+  
 
   zoom_out(10);
 
@@ -144,6 +132,7 @@ int main(int argc, char** argv) {
   refresh();
 
   states current_state = inactive;
+  publish_state("inactive", &client);
 
   // state machine
   while(1) {
@@ -163,6 +152,7 @@ int main(int argc, char** argv) {
             tstruct.draw(POSX, POSY);
             refresh();
             current_state = active;
+            publish_state("active", &client);
           }
         }
       }
@@ -180,11 +170,8 @@ int main(int argc, char** argv) {
       bool sdb_found = false;
       while (fgets(buffer, 120, fp_a) != NULL){
         if(strstr(buffer, "Killed")||strstr(buffer, "SIGKILL")) {
-      //custom_print("restart floppy");
           FILE *reset_usb_process = popen("sudo timeout -s SIGKILL 3 uhubctl -a off -p 2", "r");
-          //while(fgets(second_buffer, 120, reset_usb_process) != NULL);
           pclose(reset_usb_process);
-      //custom_print("restart finished");
           break;
         }
         if(strstr(buffer, "/dev/sda") != NULL) {
@@ -231,9 +218,12 @@ int main(int argc, char** argv) {
         tstruct.draw(POSX, POSY);
         refresh(); 
         current_state = solved;
+        publish_state("solved", &client);
       }
     }
     
     while(current_state == solved || current_state == failed);
   }
+  //MQTTClient_disconnect(client, 10000);
+  //MQTTClient_destroy(&client); 
 }
