@@ -1,6 +1,8 @@
 #include <Arduino.h>
 #include "HX711.h"
 #include <ESP8266WiFi.h>
+
+#define MQTT_KEEPALIVE 10
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include "wifi_pw.h"
@@ -9,14 +11,15 @@
 
 // State variables
 typedef enum {INIT, WIFI_SETUP, MQTT_SETUP, MQTT_CONNECT, 
-              WAIT_FOR_BEGIN, PUZZLE_START, SCALE_CALIBRATION,
-              SCALE_GREEN, SCALE_RED, PUZZLE_SOLVED, RESTART,
-              ERROR_STATE, MQTT_LOST, WIFI_LOST} state_t;
+              PUZZLE_START, SCALE_CALIBRATION, WAIT_FOR_BEGIN,
+              SCALE_GREEN, SCALE_RED, PUZZLE_SOLVED, MQTT_LOST,
+              WIFI_LOST, ERROR_STATE, RESTART} state_t;
 
 typedef enum {LED_STATE_GREEN, LED_STATE_RED, LED_STATE_ORANGE} led_state_t;
 
 // TODO Struct
 state_t state = INIT;
+state_t reconnect_state = ERROR_STATE;
 static bool puzzle_start = false;
 static bool mqtt_connected = false;
 static bool scale_measure = false;
@@ -40,8 +43,9 @@ StaticJsonDocument<300> rxdoc;
 
 // MQTT Topics
 const char* Safe_activate_topic = "5/safe/activate";
-const char* Safe_control_topic = "5/safe/control";
+/*const char* Safe_control_topic = "5/safe/control";*/
 const char* Mqtt_topic = "6/puzzle/scale";
+const char* Mqtt_terminal = "6/puzzle/terminal";
 // MQTT Messages
 const char* Msg_inactive = "{\"method\":\"STATUS\",\"state\":\"inactive\"}";
 const char* Msg_active = "{\"method\":\"STATUS\",\"state\":\"active\"}";
@@ -85,21 +89,14 @@ void loop() {
       break;
     case MQTT_CONNECT:
       if (mqtt_connect() != false) {
-        client.publish(Mqtt_topic, Msg_inactive, true);
+        
         mqtt_connected = true;
         debug_state();
         state = WAIT_FOR_BEGIN;
       }
       break;
-    case WAIT_FOR_BEGIN:
-      if (mqtt_check() != false) {
-        debug_state();
-        state = PUZZLE_START;
-      }
-      break;
     case PUZZLE_START:
       // TODO publish -> if ( != false) {
-        value = client.publish(Mqtt_topic, Msg_active, true);
         debug_state();
         state = SCALE_CALIBRATION;
       //}
@@ -108,12 +105,20 @@ void loop() {
       if (calibration_setup() != false) {
         scale_measure = true;
         debug_state();
+        client.publish(Mqtt_topic, Msg_inactive, true);
+        state = SCALE_GREEN;
+      }
+      break;
+    case WAIT_FOR_BEGIN:
+      if (mqtt_check() != false) {
+        debug_state();
         state = SCALE_GREEN;
       }
       break;
     case SCALE_GREEN:
       if (floppys_taken != false) {
         debug_state();
+        value = client.publish(Mqtt_topic, Msg_active, true);
         state = SCALE_RED;
       }
       break;
@@ -121,6 +126,7 @@ void loop() {
       if (floppys_taken == false) {
         //TODO verify message sent
         debug_state();
+        client.publish(Mqtt_topic, Msg_inactive, true);
         state = SCALE_GREEN;
       }
       break;
@@ -132,19 +138,10 @@ void loop() {
         state = RESTART;
       //}
       break;
-    case RESTART:
-      debug_state();
-      state = INIT;
-      break;
-    case ERROR_STATE:
-      debug_state();
-      state = INIT;
-      break;
     case MQTT_LOST:
-      // TODO restart scale?
       if (mqtt_connect() != false) {
         debug_state();
-        state = WAIT_FOR_BEGIN;
+        state = reconnect_state;
       } else {
         mqtt_connected = false;
       }
@@ -154,8 +151,18 @@ void loop() {
     // TODO WIFI Überwachung
       //if(wifi_reconnect() != false) {
         debug_state();
-        state = RESTART;
+        state = INIT;
       //}
+      break;     
+    case ERROR_STATE:
+      debug_state();
+      state = INIT;
+      break;    
+    case RESTART:
+      debug_state();
+      state = INIT;
+      break;
+    default:
       break;
   }
   
@@ -170,9 +177,10 @@ void loop() {
   if ((state > WIFI_SETUP) && (WiFi.status() != WL_CONNECTED)) {
     state = WIFI_LOST;
   }
-  /*if ((state > MQTT_SETUP) && (client.state() != 0)){
-    // TODO test different situations
-  }*/
+  if ((state > MQTT_SETUP) && (state < MQTT_LOST)  && (client.state() != 0)){
+    reconnect_state = state;
+    state = MQTT_LOST;
+  }
 }
 
 
@@ -327,6 +335,9 @@ bool mqtt_setup() {
   client.setServer(mqttServerIP, 1883);
   client.setCallback(mqtt_callback);
   delay(100);
+#ifdef DEBUG
+  Serial.println(MQTT_KEEPALIVE);
+#endif
   
   mqtt_setup_finished = true;
   
@@ -357,8 +368,7 @@ bool mqtt_connect() {
 #endif
     // Subscribe
     client.subscribe(Mqtt_topic);
-    client.subscribe(Safe_activate_topic);
-    client.subscribe(Safe_control_topic);
+    client.subscribe(Mqtt_terminal);
     reconnect_finished = true;
   } else {
 #ifdef DEBUG
@@ -437,7 +447,7 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
     // ODER AUS MESSAGETEMP AUSLESEN
     if (String(method1).equals("trigger") != false) {
       if (String(state1).equals("on") != false) {
-        if (String(daten).equals("active") != false) {
+        if (String(daten).equals("active") != false) { // TODO wird gelöscht
 #ifdef DEBUG
           Serial.print("Start Puzzle");
 #endif
@@ -447,28 +457,22 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
         puzzle_start = false;
       }
     }
-    if (String(method1).equals("trigger") != false) {
-      if (String(state1).equals("on") != false) {
-        if (String(daten).equals("solved") != false) {
-#ifdef DEBUG
-          Serial.print("Puzzle Soved");
-#endif
-          state = PUZZLE_SOLVED; //TODO über flag
-        }
-      }
-    }
-        
-    /*Serial.print("Changing output to ");
-    if(messageTemp == "on"){
-      Serial.println("on");
-    
-    }
-    else if(messageTemp == "off"){
-      Serial.println("off");
-      
-    }*/
   }
 
+  if (String(topic).equals(Mqtt_terminal) != false) {
+    if (String(method1).equals("state") != false) {
+      if (String(state1).equals("active") != false) {
+#ifdef DEBUG
+        Serial.print("Puzzle Soved");
+#endif
+        state = PUZZLE_SOLVED; //TODO über flag
+      }
+    }
+  }
+
+  
+  
+/*
   // If a message is received on the topic 5/safe/activate, check the message. 
   if (String(topic).equals(Safe_activate_topic) != false) {
     if (String(method1).equals("STATUS") != false) {
@@ -494,7 +498,7 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
       }
     }
   }
-  
+  */
 }
 
 /*****************************************************************************************
