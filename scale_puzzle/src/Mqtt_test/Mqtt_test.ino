@@ -103,7 +103,7 @@ void loop() {
       }
       break;
     case PUZZLE_START:
-      // TODO Restart of the puzzle?
+      // TODO Restart the puzzle here?
         debug_state();
         state = SCALE_CALIBRATION;
       //}
@@ -133,7 +133,6 @@ void loop() {
       break;
     case SCALE_RED:
       if (floppys_taken == false) {
-        //TODO verify message sent
         debug_state();
         if (client.publish(Mqtt_topic, Msg_inactive, true) != false) {
           state = SCALE_GREEN;
@@ -249,7 +248,6 @@ void scale_loop() {
         }
       } else {
         floppys_taken = true;
-        // TODO led_control = true;
         if ((led_state != LED_STATE_RED) && (led_control != false)) {
           if (client.publish(Safe_activate_topic, Msg_red, true) != false) {
             led_state = LED_STATE_RED;
@@ -475,16 +473,9 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
   Serial.print("State: "); Serial.println(state1);
   Serial.print("Daten: "); Serial.println(daten);
 #endif
-  
-  //String str_topic = String(topic);
-  //str_topic.remove(0,2);
-  //Serial.println(str_topic);
-  
-  // Feel free to add more if statements to control more GPIOs with MQTT
 
   // If a message is received on the topic 6/puzzle/scale, check the message.
   if (String(topic).equals(Mqtt_topic) != false) {
-    // ODER AUS MESSAGETEMP AUSLESEN
     if (String(method1).equals("trigger") != false) {
       if (String(state1).equals("on") != false) {
         if (String(daten).equals("active") != false) { // TODO wird gelöscht
@@ -492,6 +483,7 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
           Serial.print("Start Puzzle");
 #endif
           puzzle_start = true;
+          led_control = true; // TODO Zeitpunkt ausreichend?
         }
       } else if (String(state1).equals("off") != false){
         puzzle_start = false;
@@ -504,6 +496,7 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
     }
   }
 
+  // If a message is received on the topic 6/puzzle/terminal, check the message.
   if (String(topic).equals(Mqtt_terminal) != false) {
     if (String(method1).equals("status") != false) {
       if (String(state1).equals("active") != false) {
@@ -515,35 +508,6 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
     }
   }
 
-  
-  
-/*
-  // If a message is received on the topic 5/safe/activate, check the message. 
-  if (String(topic).equals(Safe_activate_topic) != false) {
-    if (String(method1).equals("STATUS") != false) {
-      if (String(state1).equals("solved") != false) {
-#ifdef DEBUG
-        Serial.print("Start Puzzle");
-#endif
-        puzzle_start = true;
-        client.unsubscribe(Safe_activate_topic);
-      }
-    }
-  }
-
-  // If a message is received on the topic 5/safe/control, check the message. 
-  if (String(topic).equals(Safe_control_topic) != false) {
-    if (String(method1).equals("STATUS") != false) {
-      if (String(state1).equals("solved") != false) {
-#ifdef DEBUG
-        Serial.print("Control LEDs");
-#endif
-        led_control = true;
-        client.unsubscribe(Safe_control_topic);
-      }
-    }
-  }
-  */
 }
 
 /*****************************************************************************************
