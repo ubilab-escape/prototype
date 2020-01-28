@@ -7,7 +7,7 @@
 #include <ArduinoJson.h>
 #include "wifi_pw.h"
 
-#define DEBUG 1
+//#define DEBUG
 
 // State variables
 typedef enum {INIT, WIFI_SETUP, MQTT_SETUP, MQTT_CONNECT, 
@@ -25,6 +25,7 @@ static bool mqtt_connected = false;
 static bool scale_measure = false;
 static bool led_control = false;
 static bool floppys_taken = false;
+static uint8_t connection_check_counter = 0;  
 
 // HX711 circuit wiring
 const int LED_GREEN = 0;
@@ -77,22 +78,24 @@ void loop() {
       break;
     case WIFI_SETUP:
       if (wifi_setup() != false) {
+        connection_check_counter = 0;
         debug_state();
         state = MQTT_SETUP;
       }
       break;
     case MQTT_SETUP:
       if (mqtt_setup() != false) {
+        delay(1000);
         debug_state();
         state = MQTT_CONNECT;
       }
       break;
     case MQTT_CONNECT:
       if (mqtt_connect() != false) {
-        
+        delay(1000);
         mqtt_connected = true;
         debug_state();
-        state = WAIT_FOR_BEGIN;
+        state = PUZZLE_START;
       }
       break;
     case PUZZLE_START:
@@ -106,7 +109,7 @@ void loop() {
         scale_measure = true;
         debug_state();
         client.publish(Mqtt_topic, Msg_inactive, true);
-        state = SCALE_GREEN;
+        state = WAIT_FOR_BEGIN;
       }
       break;
     case WAIT_FOR_BEGIN:
@@ -169,18 +172,24 @@ void loop() {
   if (mqtt_connected != false) {
     client.loop();
   }
-  delay(10);
+  delay(100);
   if (scale_measure != false) {
     scale_loop();
   }
 
-  if ((state > WIFI_SETUP) && (WiFi.status() != WL_CONNECTED)) {
-    state = WIFI_LOST;
+  if (connection_check_counter > 49) {
+    if ((state > WIFI_SETUP) && (state < WIFI_LOST) && (WiFi.status() != WL_CONNECTED)) {
+      state = WIFI_LOST;
+      Serial.println("WIFI LOST");
+    }
+    
+    if ((state > MQTT_CONNECT) && (state < MQTT_LOST)  && (client.state() != 0)){
+      reconnect_state = state;
+      state = MQTT_LOST;
+    }
+    connection_check_counter = 0;
   }
-  if ((state > MQTT_SETUP) && (state < MQTT_LOST)  && (client.state() != 0)){
-    reconnect_state = state;
-    state = MQTT_LOST;
-  }
+  connection_check_counter += 1;
 }
 
 
@@ -460,7 +469,7 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
   }
 
   if (String(topic).equals(Mqtt_terminal) != false) {
-    if (String(method1).equals("state") != false) {
+    if (String(method1).equals("status") != false) {
       if (String(state1).equals("active") != false) {
 #ifdef DEBUG
         Serial.print("Puzzle Soved");
@@ -527,7 +536,10 @@ bool calibration_setup() {
   pinMode(LED_RED, OUTPUT);
   pinMode(LED_GREEN, OUTPUT);
 #endif
-
+  while (!scale.is_ready()) {
+    Serial.println("Scale is not ready");
+    delay(100);
+  }
   calibration_finished = true;
 
   return calibration_finished;
