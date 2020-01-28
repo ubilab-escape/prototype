@@ -10,21 +10,24 @@
 //#define DEBUG
 
 // State variables
-typedef enum {INIT, WIFI_SETUP, MQTT_SETUP, MQTT_CONNECT, 
-              PUZZLE_START, SCALE_CALIBRATION, WAIT_FOR_BEGIN,
-              SCALE_GREEN, SCALE_RED, PUZZLE_SOLVED, MQTT_LOST,
-              WIFI_LOST, ERROR_STATE, RESTART} state_t;
+typedef enum {INIT, WIFI_SETUP, MQTT_SETUP, MQTT_CONNECT, PUZZLE_START,
+              SCALE_CALIBRATION, WAIT_FOR_BEGIN, SCALE_GREEN, SCALE_RED,
+              PUZZLE_SOLVED, WAIT_FOR_RESTART, MQTT_LOST, WIFI_LOST,
+              ERROR_STATE, RESTART} state_t;
 
 typedef enum {LED_STATE_GREEN, LED_STATE_RED, LED_STATE_ORANGE} led_state_t;
 
 // TODO Struct
-state_t state = INIT;
-state_t reconnect_state = ERROR_STATE;
+static state_t state = INIT;
+static state_t reconnect_state = ERROR_STATE;
+static led_state_t led_state = LED_STATE_GREEN;
 static bool puzzle_start = false;
 static bool mqtt_connected = false;
 static bool scale_measure = false;
 static bool led_control = false;
 static bool floppys_taken = false;
+static bool puzzle_solved = false;
+static bool puzzle_restart = false;
 static uint8_t connection_check_counter = 0;  
 
 // HX711 circuit wiring
@@ -72,6 +75,8 @@ void loop() {
       scale_measure = false;
       led_control = false;
       floppys_taken = false;
+      puzzle_solved = false;
+      puzzle_restart = false;
       debug_state();
       state = WIFI_SETUP;
       break;
@@ -122,7 +127,6 @@ void loop() {
       if (floppys_taken != false) {
         debug_state();
         if (client.publish(Mqtt_topic, Msg_active, true) != false) {
-          //value = client.publish(Mqtt_topic, Msg_active, true);
           state = SCALE_RED;
         }
       }
@@ -137,12 +141,23 @@ void loop() {
       }
       break;
     case PUZZLE_SOLVED:
-      //if ( != false) {
-        value = client.publish(Mqtt_topic, Msg_solved, true);
-        // TODO Set safe green, turn alarm off, gyrosphare off
+      if (client.publish(Mqtt_topic, Msg_solved, true) != false) {
+        if ((led_state != LED_STATE_GREEN) && (led_control != false)) {
+          if (client.publish(Safe_activate_topic, Msg_green, true) != false) {
+            led_state = LED_STATE_GREEN;
+            puzzle_solved = false;
+          }
+        }
+        // TODO Set gyrosphare off
+        debug_state();
+        state = WAIT_FOR_RESTART;
+      }
+      break;
+    case WAIT_FOR_RESTART:
+      if (puzzle_restart != false) {
         debug_state();
         state = RESTART;
-      //}
+      }
       break;
     case MQTT_LOST:
       if (mqtt_connect() != false) {
@@ -171,15 +186,25 @@ void loop() {
     default:
       break;
   }
-  
+
+  // immediately switch to the solved state when the terminal puzzle begins or the operator determines it
+  if ((puzzle_solved != false) && (puzzle_restart == false)) {
+    state = PUZZLE_SOLVED; // TODO Can operator send 'solved'?
+  }
+
+  // run mqtt handling
   if (mqtt_connected != false) {
     client.loop();
   }
+
   delay(100);
+  
+  // run scale measurements
   if (scale_measure != false) {
     scale_loop();
   }
 
+  // run network and mqtt checks approx. every 5s
   if (connection_check_counter > 49) {
     if ((state > WIFI_SETUP) && (state < WIFI_LOST) && (WiFi.status() != WL_CONNECTED)) {
       state = WIFI_LOST;
@@ -207,7 +232,6 @@ void scale_loop() {
   static int old_reading = 4;
   static int new_reading = 4;
   static int green_count = 0;
-  static led_state_t led_state = LED_STATE_GREEN;
   
   if (scale.is_ready()) {
     int reading = scale.get_units(3);
@@ -255,7 +279,6 @@ void scale_loop() {
           }
           if (green_count == 3) {
             floppys_taken = false;
-            // TODO Alarm off, Gyrosphare off
           }
         } else if (new_reading == 1 || new_reading == -1) {
           if (led_state != LED_STATE_ORANGE) {
@@ -294,7 +317,7 @@ void scale_loop() {
     Serial.println("HX711 not found.");
 #endif
     // TODO Go to Error State
-    delay(200);
+    delay(1000);
   }
 }
 
@@ -459,8 +482,7 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
   
   // Feel free to add more if statements to control more GPIOs with MQTT
 
-  // If a message is received on the topic 6/puzzle/scale, check the message. 
-  // Changes the output state according to the message
+  // If a message is received on the topic 6/puzzle/scale, check the message.
   if (String(topic).equals(Mqtt_topic) != false) {
     // ODER AUS MESSAGETEMP AUSLESEN
     if (String(method1).equals("trigger") != false) {
@@ -474,6 +496,11 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
       } else if (String(state1).equals("off") != false){
         puzzle_start = false;
       }
+    } else if (String(method1).equals("") != false) {
+#ifdef DEBUG
+      Serial.print("Restart Puzzle");
+#endif
+      puzzle_restart = true;
     }
   }
 
@@ -483,7 +510,7 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
 #ifdef DEBUG
         Serial.print("Puzzle Soved");
 #endif
-        state = PUZZLE_SOLVED; //TODO über flag
+        puzzle_solved = true;
       }
     }
   }
