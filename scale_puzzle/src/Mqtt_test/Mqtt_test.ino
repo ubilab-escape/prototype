@@ -44,7 +44,6 @@ StaticJsonDocument<300> rxdoc;
 
 // MQTT Topics
 const char* Safe_activate_topic = "5/safe/activate";
-/*const char* Safe_control_topic = "5/safe/control";*/
 const char* Mqtt_topic = "6/puzzle/scale";
 const char* Mqtt_terminal = "6/puzzle/terminal";
 // MQTT Messages
@@ -99,7 +98,7 @@ void loop() {
       }
       break;
     case PUZZLE_START:
-      // TODO publish -> if ( != false) {
+      // TODO Restart of the puzzle?
         debug_state();
         state = SCALE_CALIBRATION;
       //}
@@ -108,8 +107,9 @@ void loop() {
       if (calibration_setup() != false) {
         scale_measure = true;
         debug_state();
-        client.publish(Mqtt_topic, Msg_inactive, true);
-        state = WAIT_FOR_BEGIN;
+        if (client.publish(Mqtt_topic, Msg_inactive, true) != false) {
+          state = WAIT_FOR_BEGIN;
+        }
       }
       break;
     case WAIT_FOR_BEGIN:
@@ -121,16 +121,19 @@ void loop() {
     case SCALE_GREEN:
       if (floppys_taken != false) {
         debug_state();
-        value = client.publish(Mqtt_topic, Msg_active, true);
-        state = SCALE_RED;
+        if (client.publish(Mqtt_topic, Msg_active, true) != false) {
+          //value = client.publish(Mqtt_topic, Msg_active, true);
+          state = SCALE_RED;
+        }
       }
       break;
     case SCALE_RED:
       if (floppys_taken == false) {
         //TODO verify message sent
         debug_state();
-        client.publish(Mqtt_topic, Msg_inactive, true);
-        state = SCALE_GREEN;
+        if (client.publish(Mqtt_topic, Msg_inactive, true) != false) {
+          state = SCALE_GREEN;
+        }
       }
       break;
     case PUZZLE_SOLVED:
@@ -216,17 +219,18 @@ void scale_loop() {
         digitalWrite(LED_RED, LOW);
 #endif
         if ((led_state != LED_STATE_GREEN) && (led_control != false)) {
-          value = client.publish(Safe_activate_topic, Msg_green, true);
-          led_state = LED_STATE_GREEN;
+          if (client.publish(Safe_activate_topic, Msg_green, true) != false) {
+            led_state = LED_STATE_GREEN;
+          }
         }
       } else {
         floppys_taken = true;
         // TODO led_control = true;
         if ((led_state != LED_STATE_RED) && (led_control != false)) {
-          value = client.publish(Safe_activate_topic, Msg_red, true);
-          led_state = LED_STATE_RED;
+          if (client.publish(Safe_activate_topic, Msg_red, true) != false) {
+            led_state = LED_STATE_RED;
+          }
         }
-        // TODO -> Alarm
       }
     }
 
@@ -245,8 +249,9 @@ void scale_loop() {
           digitalWrite(LED_RED, LOW);
 #endif
           if (led_state != LED_STATE_GREEN) {
-            value = client.publish(Safe_activate_topic, Msg_green, true);
-            led_state = LED_STATE_GREEN;
+            if (client.publish(Safe_activate_topic, Msg_green, true) != false) {
+              led_state = LED_STATE_GREEN;
+            }
           }
           if (green_count == 3) {
             floppys_taken = false;
@@ -254,8 +259,9 @@ void scale_loop() {
           }
         } else if (new_reading == 1 || new_reading == -1) {
           if (led_state != LED_STATE_ORANGE) {
-            value = client.publish(Safe_activate_topic, Msg_orange, true);
-            led_state = LED_STATE_ORANGE;
+            if (client.publish(Safe_activate_topic, Msg_orange, true) != false) {
+              led_state = LED_STATE_ORANGE;
+            }
           }
           green_count = 0;
         } else {
@@ -264,8 +270,9 @@ void scale_loop() {
           digitalWrite(LED_GREEN, LOW);
 #endif
           if (led_state != LED_STATE_RED) {
-            value = client.publish(Safe_activate_topic, Msg_red, true);
-            led_state = LED_STATE_RED;
+            if (client.publish(Safe_activate_topic, Msg_red, true) != false) {
+              led_state = LED_STATE_RED;
+            }
           }
           green_count = 0;
         }
@@ -275,8 +282,9 @@ void scale_loop() {
         digitalWrite(LED_GREEN, LOW);
 #endif
         if (led_state != LED_STATE_RED) {
-          value = client.publish(Safe_activate_topic, Msg_red, true);
-          led_state = LED_STATE_RED;
+          if (client.publish(Safe_activate_topic, Msg_red, true) != false) {
+            led_state = LED_STATE_RED;
+          }
         }
         green_count = 0;
       }
@@ -339,12 +347,13 @@ DESCRIPTION:
 bool mqtt_setup() {
   bool mqtt_setup_finished = false;
   const IPAddress mqttServerIP(10,0,0,2);
-  //uint8_t mqtt_server_port = 1883;
+  //uint8_t mqtt_server_port = 1883; //TODO
   
   client.setServer(mqttServerIP, 1883);
   client.setCallback(mqtt_callback);
   delay(100);
 #ifdef DEBUG
+  Serial.println("Keepalive setting:");
   Serial.println(MQTT_KEEPALIVE);
 #endif
   
