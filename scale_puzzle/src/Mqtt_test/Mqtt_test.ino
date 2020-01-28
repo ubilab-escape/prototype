@@ -141,12 +141,8 @@ void loop() {
       break;
     case PUZZLE_SOLVED:
       if (client.publish(Mqtt_topic, Msg_solved, true) != false) {
-        if ((led_state != LED_STATE_GREEN) && (led_control != false)) {
-          if (client.publish(Safe_activate_topic, Msg_green, true) != false) {
-            led_state = LED_STATE_GREEN;
-            puzzle_solved = false;
-          }
-        }
+        set_safe_color(LED_STATE_GREEN);
+        puzzle_solved = false;
         // TODO Set gyrosphare off
         debug_state();
         state = WAIT_FOR_RESTART;
@@ -241,18 +237,10 @@ void scale_loop() {
         digitalWrite(LED_GREEN, HIGH);
         digitalWrite(LED_RED, LOW);
 #endif
-        if ((led_state != LED_STATE_GREEN) && (led_control != false)) {
-          if (client.publish(Safe_activate_topic, Msg_green, true) != false) {
-            led_state = LED_STATE_GREEN;
-          }
-        }
+        set_safe_color(LED_STATE_GREEN);
       } else {
         floppys_taken = true;
-        if ((led_state != LED_STATE_RED) && (led_control != false)) {
-          if (client.publish(Safe_activate_topic, Msg_red, true) != false) {
-            led_state = LED_STATE_RED;
-          }
-        }
+        set_safe_color(LED_STATE_RED);
       }
     }
 
@@ -270,31 +258,20 @@ void scale_loop() {
           digitalWrite(LED_GREEN, HIGH);
           digitalWrite(LED_RED, LOW);
 #endif
-          if (led_state != LED_STATE_GREEN) {
-            if (client.publish(Safe_activate_topic, Msg_green, true) != false) {
-              led_state = LED_STATE_GREEN;
-            }
-          }
+          set_safe_color(LED_STATE_GREEN);
+          
           if (green_count == 3) {
             floppys_taken = false;
           }
         } else if (new_reading == 1 || new_reading == -1) {
-          if (led_state != LED_STATE_ORANGE) {
-            if (client.publish(Safe_activate_topic, Msg_orange, true) != false) {
-              led_state = LED_STATE_ORANGE;
-            }
-          }
+          set_safe_color(LED_STATE_ORANGE);
           green_count = 0;
         } else {
 #ifdef DEBUG
           digitalWrite(LED_RED, HIGH);
           digitalWrite(LED_GREEN, LOW);
 #endif
-          if (led_state != LED_STATE_RED) {
-            if (client.publish(Safe_activate_topic, Msg_red, true) != false) {
-              led_state = LED_STATE_RED;
-            }
-          }
+          set_safe_color(LED_STATE_RED);
           green_count = 0;
         }
       } else {
@@ -302,11 +279,7 @@ void scale_loop() {
         digitalWrite(LED_RED, HIGH);
         digitalWrite(LED_GREEN, LOW);
 #endif
-        if (led_state != LED_STATE_RED) {
-          if (client.publish(Safe_activate_topic, Msg_red, true) != false) {
-            led_state = LED_STATE_RED;
-          }
-        }
+        set_safe_color(LED_STATE_RED);
         green_count = 0;
       }
     }
@@ -316,6 +289,39 @@ void scale_loop() {
 #endif
     // TODO Go to Error State
     delay(1000);
+  }
+}
+
+/*****************************************************************************************
+                                       FUNCTION INFO
+NAME: 
+    set_safe_color
+DESCRIPTION:
+    
+*****************************************************************************************/
+void set_safe_color(led_state_t color_state){
+  const char* color_message;
+  
+  if (led_control != false) {
+    if ((led_state != color_state)) {
+      switch (color_state) {
+        case LED_STATE_GREEN:
+          color_message = Msg_green;
+          break;
+        case LED_STATE_ORANGE:
+          color_message = Msg_orange;
+          break;
+        case LED_STATE_RED:
+          color_message = Msg_red;
+          break;
+        default:
+          color_message = Msg_green;
+          break;
+      }
+      if (client.publish(Safe_activate_topic, color_message, true) != false) {
+        led_state = color_state;
+      }
+    }
   }
 }
 
