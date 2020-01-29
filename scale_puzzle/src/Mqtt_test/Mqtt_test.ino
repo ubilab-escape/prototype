@@ -1,13 +1,12 @@
 #include <Arduino.h>
 #include "HX711.h"
 #include <ESP8266WiFi.h>
-
-#define MQTT_KEEPALIVE 10
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include "wifi_pw.h"
 
-//#define DEBUG
+#define DEBUG
+#define MQTT_KEEPALIVE 10
 
 // State variables
 typedef enum {INIT, WIFI_SETUP, MQTT_SETUP, MQTT_CONNECT, PUZZLE_START,
@@ -32,7 +31,7 @@ static uint8_t connection_check_counter = 0;
 
 // HX711 circuit wiring
 const int LED_GREEN = 0;
-const int LED_RED = 5;
+const int LED_RED = 5; 
 
 HX711 scale;
 
@@ -50,12 +49,12 @@ const char* Safe_activate_topic = "5/safe/activate";
 const char* Mqtt_topic = "6/puzzle/scale";
 const char* Mqtt_terminal = "6/puzzle/terminal";
 // MQTT Messages
-const char* Msg_inactive = "{\"method\":\"STATUS\",\"state\":\"inactive\"}";
-const char* Msg_active = "{\"method\":\"STATUS\",\"state\":\"active\"}";
-const char* Msg_solved = "{\"method\":\"STATUS\",\"state\":\"solved\"}";
-const char* Msg_green = "{\"method\":\"TRIGGER\",\"state\":\"on\",\"data\":\"2:2\"}";
-const char* Msg_red = "{\"method\":\"TRIGGER\",\"state\":\"on\",\"data\":\"1:2\"}";
-const char* Msg_orange = "{\"method\":\"TRIGGER\",\"state\":\"on\",\"data\":\"4:2\"}";
+const char* Msg_inactive = "{\"method\":\"status\",\"state\":\"inactive\"}";
+const char* Msg_active = "{\"method\":\"status\",\"state\":\"active\"}";
+const char* Msg_solved = "{\"method\":\"status\",\"state\":\"solved\"}";
+const char* Msg_green = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"2:2\"}";
+const char* Msg_red = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"1:2\"}";
+const char* Msg_orange = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"4:2\"}";
 
 
 void setup() {
@@ -82,6 +81,7 @@ void loop() {
       break;
     case WIFI_SETUP:
       if (wifi_setup() != false) {
+        delay(500);
         connection_check_counter = 0;
         debug_state();
         state = MQTT_SETUP;
@@ -89,14 +89,14 @@ void loop() {
       break;
     case MQTT_SETUP:
       if (mqtt_setup() != false) {
-        delay(1000);
+        delay(500);
         debug_state();
         state = MQTT_CONNECT;
       }
       break;
     case MQTT_CONNECT:
       if (mqtt_connect() != false) {
-        delay(1000);
+        delay(500);
         mqtt_connected = true;
         debug_state();
         state = PUZZLE_START;
@@ -143,7 +143,6 @@ void loop() {
       if (client.publish(Mqtt_topic, Msg_solved, true) != false) {
         set_safe_color(LED_STATE_GREEN);
         puzzle_solved = false;
-        // TODO Set gyrosphare off
         debug_state();
         state = WAIT_FOR_RESTART;
       }
@@ -164,11 +163,9 @@ void loop() {
       
       break;
     case WIFI_LOST:
-    // TODO WIFI Überwachung
-      //if(wifi_reconnect() != false) {
-        debug_state();
-        state = INIT;
-      //}
+      WiFi.disconnect();
+      debug_state();
+      state = INIT; //TODO init nach WIFI LOST? TESTEN OB WAAGE GELÖSCHT WERDEN MUSS
       break;     
     case ERROR_STATE:
       debug_state();
@@ -185,6 +182,10 @@ void loop() {
   // immediately switch to the solved state when the terminal puzzle begins or the operator determines it
   if ((puzzle_solved != false) && (puzzle_restart == false)) {
     state = PUZZLE_SOLVED; // TODO Can operator send 'solved'?
+  }
+  if ((puzzle_solved == false) && (puzzle_restart == true)) {
+    puzzle_restart = false;
+    state = RESTART; // TODO Zustandswechsel erlaubt?
   }
 
   // run mqtt handling
@@ -374,9 +375,9 @@ DESCRIPTION:
 bool mqtt_setup() {
   bool mqtt_setup_finished = false;
   const IPAddress mqttServerIP(10,0,0,2);
-  //uint8_t mqtt_server_port = 1883; //TODO
+  uint16_t mqtt_server_port = 1883;
   
-  client.setServer(mqttServerIP, 1883);
+  client.setServer(mqttServerIP, mqtt_server_port);
   client.setCallback(mqtt_callback);
   delay(100);
 #ifdef DEBUG
@@ -483,14 +484,12 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
   // If a message is received on the topic 6/puzzle/scale, check the message.
   if (String(topic).equals(Mqtt_topic) != false) {
     if (String(method1).equals("trigger") != false) {
-      if (String(state1).equals("on") != false) {
-        if (String(daten).equals("active") != false) { // TODO wird gelöscht
+      if (String(state1).equals("on") != false) { // TODO wird gelöscht
 #ifdef DEBUG
           Serial.print("Start Puzzle");
 #endif
           puzzle_start = true;
           led_control = true; // TODO Zeitpunkt ausreichend?
-        }
       } else if (String(state1).equals("off") != false){
         puzzle_start = false;
       }
@@ -507,7 +506,7 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
     if (String(method1).equals("status") != false) {
       if (String(state1).equals("active") != false) {
 #ifdef DEBUG
-        Serial.print("Puzzle Soved");
+        Serial.print("Puzzle Solved");
 #endif
         puzzle_solved = true;
       }
@@ -536,7 +535,8 @@ bool calibration_setup() {
 #endif
   scale.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
   scale.set_scale(divider);
-  scale.tare();
+  scale.tare(20);
+  delay(1000);
   //scale.set_offset(offset);
 #ifdef DEBUG
   pinMode(LED_RED, OUTPUT);
@@ -559,9 +559,11 @@ DESCRIPTION:
     
 
 *****************************************************************************************/
-void debug_state() {
+void debug_state() { // TODO DEBUG PRINT FUNKTION
 #ifdef DEBUG
   Serial.println(String(state));
   Serial.println();
 #endif
 }
+
+// TODO Ab und zu stuck at active trotz weight = 0;
