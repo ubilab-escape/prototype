@@ -230,7 +230,7 @@ void scale_loop() {
   static int green_count = 0;
   
   if (scale.is_ready()) {
-    int reading = scale.get_units(3);
+    int reading = round(scale.get_units(3));
 
     if (state == SCALE_GREEN) {
       if (reading == 0) {
@@ -528,7 +528,7 @@ bool calibration_setup() {
   const int LOADCELL_DOUT_PIN = 13;
   const int LOADCELL_SCK_PIN = 12;
   // const long offset = -1693891;
-  const long divider = 6500;
+  const long divider = 7000;
 
 #ifdef DEBUG
   Serial.println("Beginning:");
