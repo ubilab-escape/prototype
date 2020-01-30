@@ -1,35 +1,14 @@
 #include <Arduino.h>
-#include "HX711.h"
 #include <ESP8266WiFi.h>
+
+#define MQTT_KEEPALIVE 10
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
+#include "HX711.h"
+#include "Mqtt_test.h"
 #include "wifi_pw.h"
 
 #define DEBUG
-#define MQTT_KEEPALIVE 10
-
-// State variables
-typedef enum {INIT, WIFI_SETUP, MQTT_SETUP, MQTT_CONNECT, PUZZLE_START,
-              SCALE_CALIBRATION, WAIT_FOR_BEGIN, SCALE_GREEN, SCALE_RED,
-              PUZZLE_SOLVED, WAIT_FOR_RESTART, MQTT_LOST, WIFI_LOST,
-              ERROR_STATE, RESTART} state_t;
-
-typedef enum {LED_STATE_GREEN, LED_STATE_RED, LED_STATE_ORANGE} led_state_t;
-
-
-typedef struct ScalePuzzle_HandlerType {
-  state_t state = INIT;
-  state_t reconnect_state = ERROR_STATE;
-  led_state_t led_state = LED_STATE_GREEN;
-  bool puzzle_start = false;
-  bool mqtt_connected = false;
-  bool scale_measure = false;
-  bool led_control = false;
-  bool floppys_taken = false;
-  bool puzzle_solved = false;
-  bool puzzle_restart = false;
-  uint8_t connection_check_counter = 0;
-};
 
 // HX711 circuit wiring
 const int LOADCELL_DOUT_PIN = 13;
@@ -79,21 +58,21 @@ void loop() {
   switch (ScaleStruct.state) {
     case INIT:
       InitScalePuzzleStructure();
-      debug_state();
+      debug_print(String(ScaleStruct.state));
       ScaleStruct.state = WIFI_SETUP;
       break;
     case WIFI_SETUP:
       if (wifi_setup() != false) {
         delay(500);
         ScaleStruct.connection_check_counter = 0;
-        debug_state();
+        debug_print(String(ScaleStruct.state));
         ScaleStruct.state = MQTT_SETUP;
       }
       break;
     case MQTT_SETUP:
       if (mqtt_setup() != false) {
         delay(500);
-        debug_state();
+        debug_print(String(ScaleStruct.state));
         ScaleStruct.state = MQTT_CONNECT;
       }
       break;
@@ -101,20 +80,19 @@ void loop() {
       if (mqtt_connect() != false) {
         delay(500);
         ScaleStruct.mqtt_connected = true;
-        debug_state();
+        debug_print(String(ScaleStruct.state));
         ScaleStruct.state = PUZZLE_START;
       }
       break;
     case PUZZLE_START:
-      // TODO Restart the puzzle here! Call struct Init
-        debug_state();
-        ScaleStruct.state = SCALE_CALIBRATION;
-      //}
+      ReInitScalePuzzleStructure();
+      debug_print(String(ScaleStruct.state));
+      ScaleStruct.state = SCALE_CALIBRATION;
       break;
     case SCALE_CALIBRATION:
       if (calibration_setup() != false) {
         ScaleStruct.scale_measure = true;
-        debug_state();
+        debug_print(String(ScaleStruct.state));
         if (client.publish(Mqtt_topic, Msg_inactive, true) != false) {
           ScaleStruct.state = WAIT_FOR_BEGIN;
         }
@@ -122,13 +100,13 @@ void loop() {
       break;
     case WAIT_FOR_BEGIN:
       if (mqtt_check() != false) {
-        debug_state();
+        debug_print(String(ScaleStruct.state));
         ScaleStruct.state = SCALE_GREEN;
       }
       break;
     case SCALE_GREEN:
       if (ScaleStruct.floppys_taken != false) {
-        debug_state();
+        debug_print(String(ScaleStruct.state));
         if (client.publish(Mqtt_topic, Msg_active, true) != false) {
           ScaleStruct.state = SCALE_RED;
         }
@@ -136,7 +114,7 @@ void loop() {
       break;
     case SCALE_RED:
       if (ScaleStruct.floppys_taken == false) {
-        debug_state();
+        debug_print(String(ScaleStruct.state));
         if (client.publish(Mqtt_topic, Msg_inactive, true) != false) {
           ScaleStruct.state = SCALE_GREEN;
         }
@@ -146,19 +124,19 @@ void loop() {
       if (client.publish(Mqtt_topic, Msg_solved, true) != false) {
         set_safe_color(LED_STATE_GREEN);
         ScaleStruct.puzzle_solved = false;
-        debug_state();
+        debug_print(String(ScaleStruct.state));
         ScaleStruct.state = WAIT_FOR_RESTART;
       }
       break;
     case WAIT_FOR_RESTART:
       if (ScaleStruct.puzzle_restart != false) {
-        debug_state();
+        debug_print(String(ScaleStruct.state));
         ScaleStruct.state = RESTART;
       }
       break;
     case MQTT_LOST:
       if (mqtt_connect() != false) {
-        debug_state();
+        debug_print(String(ScaleStruct.state));
         ScaleStruct.state = ScaleStruct.reconnect_state;
       } else {
         ScaleStruct.mqtt_connected = false;
@@ -166,15 +144,15 @@ void loop() {
       break;
     case WIFI_LOST:
       WiFi.disconnect();
-      debug_state();
+      debug_print(String(ScaleStruct.state));
       ScaleStruct.state = INIT;
       break;     
     case ERROR_STATE:
-      debug_state();
+      debug_print(String(ScaleStruct.state));
       ScaleStruct.state = INIT;
       break;    
     case RESTART:
-      debug_state();
+      debug_print(String(ScaleStruct.state));
       ScaleStruct.state = PUZZLE_START;
       break;
     default:
@@ -208,7 +186,7 @@ void loop() {
         (ScaleStruct.state < WIFI_LOST) && 
         (WiFi.status() != WL_CONNECTED)) {
       ScaleStruct.state = WIFI_LOST;
-      Serial.println("WIFI LOST");
+      debug_print("WIFI LOST");
     }
     
     if ((ScaleStruct.state > MQTT_CONNECT) && 
@@ -252,10 +230,9 @@ void scale_loop() {
     }
 
     if (ScaleStruct.state == SCALE_RED) {
-#ifdef DEBUG
-      Serial.print("Value for known weight is: ");
-      Serial.println(reading);
-#endif
+      debug_print("Value for known weight is: ");
+      debug_print(String(reading));
+      
       old_reading = new_reading;
       new_reading = reading;
       if (old_reading == new_reading) {
@@ -291,9 +268,8 @@ void scale_loop() {
       }
     }
   } else {
-#ifdef DEBUG
-    Serial.println("HX711 not found.");
-#endif
+    debug_print("HX711 not found.");
+    
     // TODO Go to Error State
     delay(1000);
   }
@@ -341,16 +317,27 @@ DESCRIPTION:
 *****************************************************************************************/
 void InitScalePuzzleStructure(void) {
   ScaleStruct.state = INIT;
-  ScaleStruct.reconnect_state = ERROR_STATE;
+  ScaleStruct.mqtt_connected = false;
+  ScaleStruct.connection_check_counter = 0;
+  ReInitScalePuzzleStructure();
+}
+
+/*****************************************************************************************
+                                       FUNCTION INFO
+NAME: 
+    ReInitScalePuzzleStructure
+DESCRIPTION:
+
+*****************************************************************************************/
+void ReInitScalePuzzleStructure(void) {
+  ScaleStruct.reconnect_state = ERROR_STATE; // TODO welcher state sinnvoll?
   ScaleStruct.led_state = LED_STATE_GREEN;
   ScaleStruct.puzzle_start = false;
-  ScaleStruct.mqtt_connected = false;
   ScaleStruct.scale_measure = false;
   ScaleStruct.led_control = false;
   ScaleStruct.floppys_taken = false;
   ScaleStruct.puzzle_solved = false;
   ScaleStruct.puzzle_restart = false;
-  ScaleStruct.connection_check_counter = 0;
 }
 
 /*****************************************************************************************
@@ -361,7 +348,7 @@ DESCRIPTION:
     Connect to the given WiFi. For the password create a file named wifi_pw.h and define 
     a variable "const char* PASSWORD" with the password.
 *****************************************************************************************/
-bool wifi_setup() {
+bool wifi_setup(void) {
   bool wifi_finished = false;
   const char* ssid = "ubilab_wifi";
   const char* pw = PASSWORD;
@@ -375,13 +362,10 @@ bool wifi_setup() {
 #endif
     if (WiFi.status() == WL_CONNECTED) {
       wifi_finished = true;
-#ifdef DEBUG
-      Serial.printf("Connection status: %d\n", WiFi.status());
-      Serial.println();
-      Serial.print("Connected, IP address: ");
-      Serial.println(WiFi.localIP());
-      Serial.println();
-#endif
+
+      debug_print(String("Connection status: " + String(WiFi.status())));
+      debug_print("Connected, IP address: ");
+      debug_print(WiFi.localIP().toString());
     }
   }
 
@@ -396,7 +380,7 @@ DESCRIPTION:
     
 
 *****************************************************************************************/
-bool mqtt_setup() {
+bool mqtt_setup(void) {
   bool mqtt_setup_finished = false;
   const IPAddress mqttServerIP(10,0,0,2);
   uint16_t mqtt_server_port = 1883;
@@ -404,10 +388,8 @@ bool mqtt_setup() {
   client.setServer(mqttServerIP, mqtt_server_port);
   client.setCallback(mqtt_callback);
   delay(100);
-#ifdef DEBUG
-  Serial.println("Keepalive setting:");
-  Serial.println(MQTT_KEEPALIVE);
-#endif
+  debug_print("Keepalive setting:");
+  debug_print(String(MQTT_KEEPALIVE));
   
   mqtt_setup_finished = true;
   
@@ -422,30 +404,28 @@ DESCRIPTION:
     
 
 *****************************************************************************************/
-bool mqtt_connect() {
+bool mqtt_connect(void) {
   bool reconnect_finished = false;
 
-#ifdef DEBUG
-  Serial.print("Attempting MQTT connection...");
-#endif
+  debug_print("Attempting MQTT connection...");
+
   // Create a random client ID
   String clientId = "ESP8266Client-";
   clientId += String(random(0xffff), HEX);
   // Attempt to connect
   if (client.connect(clientId.c_str())) {  
-#ifdef DEBUG
-    Serial.println("connected");
-#endif
+    debug_print("connected");
+    
     // Subscribe
     client.subscribe(Mqtt_topic);
     client.subscribe(Mqtt_terminal);
+    
     reconnect_finished = true;
   } else {
-#ifdef DEBUG
-    Serial.print("failed, rc=");
-    Serial.print(client.state());
-    Serial.println(" try again in 5 seconds");
-#endif
+    debug_print("failed, rc=");
+    debug_print(String(client.state()));
+    debug_print(" try again in 5 seconds");
+
     // Wait 5 seconds before retrying
     delay(5000);
   }
@@ -461,7 +441,7 @@ DESCRIPTION:
     
 
 *****************************************************************************************/
-bool mqtt_check() {
+bool mqtt_check(void) {
   bool mqtt_check_finished = false;
 // TODO could be done without a function
   if (ScaleStruct.puzzle_start != false) {
@@ -488,7 +468,7 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
 #endif
   String messageTemp;
   
-  for (int i = 0; i < length; i++) {
+  for (unsigned int i = 0; i < length; i++) {
 #ifdef DEBUG
     Serial.print((char)message[i]);
 #endif
@@ -498,29 +478,25 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
   const char* method1 = rxdoc["method"];
   const char* state1 = rxdoc["state"];
   const char* daten = rxdoc["data"];
-#ifdef DEBUG
-  Serial.println();
-  Serial.print("Methode: "); Serial.println(method1);
-  Serial.print("State: "); Serial.println(state1);
-  Serial.print("Daten: "); Serial.println(daten);
-#endif
+  debug_print("Methode: "); 
+  debug_print(method1);
+  debug_print("State: "); 
+  debug_print(state1);
+  debug_print("Daten: "); 
+  debug_print(daten);
 
   // If a message is received on the topic 6/puzzle/scale, check the message.
   if (String(topic).equals(Mqtt_topic) != false) {
     if (String(method1).equals("trigger") != false) {
       if (String(state1).equals("on") != false) { // TODO wird gelöscht
-#ifdef DEBUG
-        Serial.print("Start Puzzle");
-#endif
+        debug_print("Start Puzzle");
         ScaleStruct.puzzle_start = true;
         ScaleStruct.led_control = true; // TODO Zeitpunkt ausreichend?
       } else if (String(state1).equals("off") != false){
         ScaleStruct.puzzle_start = false;
       }
     } else if (String(method1).equals("") != false) {
-#ifdef DEBUG
-      Serial.print("Restart Puzzle");
-#endif
+      debug_print("Restart Puzzle");
       ScaleStruct.puzzle_restart = true;
     }
   }
@@ -529,9 +505,7 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
   if (String(topic).equals(Mqtt_terminal) != false) {
     if (String(method1).equals("status") != false) {
       if (String(state1).equals("active") != false) {
-#ifdef DEBUG
-        Serial.print("Puzzle Solved");
-#endif
+        debug_print("Puzzle Solved");
         ScaleStruct.puzzle_solved = true;
       }
     }
@@ -547,12 +521,11 @@ DESCRIPTION:
     
 
 *****************************************************************************************/
-bool calibration_setup() {
+bool calibration_setup(void) {
   bool calibration_finished = false;
 
-#ifdef DEBUG
-  Serial.println("Beginning:");
-#endif
+  debug_print("Beginning:");
+
   scale.tare();
   //scale.set_offset(offset);
 #ifdef DEBUG
@@ -568,17 +541,9 @@ bool calibration_setup() {
   return calibration_finished;
 }
 
-/*****************************************************************************************
-                                       FUNCTION INFO
-NAME: 
-    debug_state
-DESCRIPTION:
-    
-
-*****************************************************************************************/
-void debug_state() { // TODO DEBUG PRINT FUNKTION
+void debug_print(String print_string) {
 #ifdef DEBUG
-  Serial.println(String(ScaleStruct.state));
+  Serial.println(print_string);
   Serial.println();
 #endif
 }
