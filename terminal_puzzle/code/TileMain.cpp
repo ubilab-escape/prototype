@@ -1,5 +1,8 @@
 // Copyright 2019
-
+    extern "C" {
+    #include "MQTTClient.h"
+    #include "MQTTClientPersistence.h"
+    }
 #include <ncurses.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -13,21 +16,32 @@
 #include <vector>
 #include <chrono>
 #include <thread>
+#include <algorithm>
 #include "./Tile.h"
 #include "./TileStructure.h"
-#include "MQTTClient.h"
 
 #define ADDRESS     "10.0.0.2:1883"
 #define CLIENTID    "raspberry-terminal"
-#define TOPIC       "6/puzzle/terminal"
-#define QOS         1
-#define TIMEOUT     10000L
+#define TOPIC_TERMINAL       "6/puzzle/terminal"
+#define TOPIC_SCALE    "6/puzzle/scale"
+#define QOS         0
+#define TIMEOUT     30000L
 
 enum states {inactive, active, solved, failed};
 
 using namespace std;
 
+volatile bool scale_alarm = false;
+volatile MQTTClient_deliveryToken deliveredtoken;
+
 void custom_print(char* s) {
+  clear();
+  mvprintw(0, 0, s);
+  refresh();
+  sleep(2);
+}
+
+void custom_print(const char* s) {
   clear();
   mvprintw(0, 0, s);
   refresh();
@@ -64,34 +78,65 @@ void publish_state(string str, MQTTClient* cl) {
   pubmsg.payloadlen = strlen(msg);
   pubmsg.qos = QOS;
   pubmsg.retained = 1;
-  MQTTClient_publishMessage(*cl, TOPIC, &pubmsg, &token);
+  MQTTClient_publishMessage(*cl, TOPIC_TERMINAL, &pubmsg, &token);
   MQTTClient_waitForCompletion(*cl, token, TIMEOUT);
   free(msg);
 }
-
+void delivered(void *context, MQTTClient_deliveryToken dt)
+{
+    //printf("Message with token value %d delivery confirmed\n", dt);
+    deliveredtoken = dt;
+}
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message)
 {
+    int i;
     string msg = (char*)message->payload;
-    // custom_print((char*)message->payload);
+    string str_topicName = topicName;
+    cout << str_topicName << endl << msg;
+    custom_print(str_topicName.c_str());
+    custom_print(msg.c_str());
     
+    //bool scale_alarm;
+//    std::transform(msg.begin(), msg.end(), msg.begin(), ::tolower);
+    
+    // If there are status messages for the scale change scale_alarm accordingly
+
+    if (str_topicName.find("6/puzzle/scale") != std::string::npos) {
+        //custom_print(msg.c_str());
+        if(msg.find("status") != std::string::npos) {
+            if(msg.find("inactive") != std::string::npos) {
+                scale_alarm = false;
+                custom_print("inactive");
+            }
+            else if (msg.find("active") != std::string::npos) {
+                scale_alarm = true;
+                custom_print("active");
+            }
+        }
+    }/*
+    else if (str_topicName.find("6/puzzle/terminal") != std::string::npos) {
+        if(msg.find("trigger") != std::string::npos)
+    }  */  
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
-    
     return 1;
 }
 
 MQTTClient client;
-  MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
 void connlost(void *context, char *cause)
 {
-    printf("\nConnection lost\n");
-    while(MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS);
+    if (MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
+        custom_print("Failed to reconnect");
+    }
 }
+
 int main(int argc, char** argv) {
 
   // init mqtt
-  MQTTClient_create(&client, ADDRESS, CLIENTID, MQTTCLIENT_PERSISTENCE_NONE, NULL);
-  conn_opts.keepAliveInterval = 10;
+  MQTTClient_create(&client, ADDRESS, CLIENTID,
+  MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
+  conn_opts.keepAliveInterval = 3;
   conn_opts.cleansession = 1;
 
   MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, NULL);
@@ -99,11 +144,12 @@ int main(int argc, char** argv) {
   int rc;
   if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
   {
-      printf("Failed to connect, return code %d\n", rc);
-      exit(-1);
+      custom_print("Failed to connect");
+      while(1);
   }
 
-  MQTTClient_subscribe(client, TOPIC, QOS);
+  MQTTClient_subscribe(client, TOPIC_TERMINAL, QOS);
+  MQTTClient_subscribe(client, TOPIC_SCALE, QOS);
 
   
 
@@ -125,19 +171,24 @@ int main(int argc, char** argv) {
   keypad(stdscr, true);
 
 
-  //custom_print(tstruct.size());
   // show TileStruct before shuffeled
-  clear();
-  tstruct.draw(POSX, POSY);
-  refresh();
+  //clear();
+  //tstruct.draw(POSX, POSY);
+  //refresh();
 
   states current_state = inactive;
   publish_state("inactive", &client);
 
+
   // state machine
   while(1) {
     // waiting for activation
-    while (current_state == inactive){    
+    while (current_state == inactive){
+      if(!scale_alarm) {
+          //custom_print(" Checking");
+            //clear();
+            //tstruct.draw(POSX, POSY);
+            //refresh();
       FILE *fp_a = popen("sudo ./check_floppy.sh 2>&1", "r");
       char buffer [120];
       bool sd_found = false;
@@ -157,6 +208,13 @@ int main(int argc, char** argv) {
         }
       }
       pclose(fp_a);
+      }
+      else {
+          //custom_print("Not Checking:");
+            //clear();
+            //tstruct.draw(POSX, POSY);
+            //refresh();
+      }
     }
 
     // riddle is active
@@ -191,18 +249,20 @@ int main(int argc, char** argv) {
       }      
       pclose(fp_a);
 
-      if(sda_id != 0) {
+      if(sda_id > 0 && sda_id < 5) {
         tstruct.turnTilesRight(sda_id % 4);
-        clear();
+        //clear();
         tstruct.draw(POSX, POSY);
         refresh();    
+        sda_id = 0;
       }
 
-      if(sdb_id != 0) {
+      if(sdb_id > 0 && sdb_id < 5) {
         tstruct.turnTilesAround(sdb_id % 4);
-        clear();
+        //clear();
         tstruct.draw(POSX, POSY);
-        refresh();    
+        refresh();   
+        sdb_id = 0; 
       }
 
       auto t2 = std::chrono::high_resolution_clock::now();
