@@ -8,7 +8,7 @@
 #include "Mqtt_test.h"
 #include "wifi_pw.h"
 
-#define DEBUG
+//#define DEBUG
 
 // HX711 circuit wiring
 const int LOADCELL_DOUT_PIN = 13;
@@ -31,7 +31,7 @@ int test_var = 0;
 StaticJsonDocument<300> rxdoc;
 
 // MQTT Topics
-const char* Safe_activate_topic = "5/safe/activate";
+const char* Safe_activate_topic = "5/safe/control";
 const char* Mqtt_topic = "6/puzzle/scale";
 const char* Mqtt_terminal = "6/puzzle/terminal";
 // MQTT Messages
@@ -218,10 +218,7 @@ void scale_loop() {
 
     if (ScaleStruct.state == SCALE_GREEN) {
       if (reading == 0) {
-#ifdef DEBUG
-        digitalWrite(LED_GREEN, HIGH);
-        digitalWrite(LED_RED, LOW);
-#endif
+        debug_led(LED_GREEN);
         set_safe_color(LED_STATE_GREEN);
       } else {
         ScaleStruct.floppys_taken = true;
@@ -238,10 +235,7 @@ void scale_loop() {
       if (old_reading == new_reading) {
         if (new_reading == 0) {
           green_count = green_count + 1;
-#ifdef DEBUG
-          digitalWrite(LED_GREEN, HIGH);
-          digitalWrite(LED_RED, LOW);
-#endif
+          debug_led(LED_GREEN);
           set_safe_color(LED_STATE_GREEN);
           
           if (green_count == 3) {
@@ -251,18 +245,12 @@ void scale_loop() {
           set_safe_color(LED_STATE_ORANGE);
           green_count = 0;
         } else {
-#ifdef DEBUG
-          digitalWrite(LED_RED, HIGH);
-          digitalWrite(LED_GREEN, LOW);
-#endif
+          debug_led(LED_RED);
           set_safe_color(LED_STATE_RED);
           green_count = 0;
         }
       } else {
-#ifdef DEBUG
-        digitalWrite(LED_RED, HIGH);
-        digitalWrite(LED_GREEN, LOW);
-#endif
+        debug_led(LED_RED);
         set_safe_color(LED_STATE_RED);
         green_count = 0;
       }
@@ -410,7 +398,7 @@ bool mqtt_connect(void) {
   debug_print("Attempting MQTT connection...");
 
   // Create a random client ID
-  String clientId = "ESP8266Client-";
+  String clientId = "ESP8266Scale-";
   clientId += String(random(0xffff), HEX);
   // Attempt to connect
   if (client.connect(clientId.c_str())) {  
@@ -461,34 +449,32 @@ DESCRIPTION:
 
 *****************************************************************************************/
 void mqtt_callback(char* topic, byte* message, unsigned int length) {
-#ifdef DEBUG
-  Serial.print("Message arrived on topic: ");
-  Serial.print(topic);
-  Serial.print(". Message: ");
-#endif
+  debug_print("Message arrived on topic: ");
+  debug_print(topic);
+  debug_print(". Message: ");
+
   String messageTemp;
   
   for (unsigned int i = 0; i < length; i++) {
-#ifdef DEBUG
-    Serial.print((char)message[i]);
-#endif
     messageTemp += (char)message[i];
   }
+  debug_print(messageTemp);
+  
   deserializeJson(rxdoc, message);
   const char* method1 = rxdoc["method"];
   const char* state1 = rxdoc["state"];
   const char* daten = rxdoc["data"];
-  debug_print("Methode: "); 
+  /*debug_print("Methode: "); 
   debug_print(method1);
   debug_print("State: "); 
   debug_print(state1);
   debug_print("Daten: "); 
-  debug_print(daten);
+  debug_print(daten);*/
 
   // If a message is received on the topic 6/puzzle/scale, check the message.
   if (String(topic).equals(Mqtt_topic) != false) {
     if (String(method1).equals("trigger") != false) {
-      if (String(state1).equals("on") != false) { // TODO wird gelöscht
+      if (String(state1).equals("on") != false) {
         debug_print("Start Puzzle");
         ScaleStruct.puzzle_start = true;
         ScaleStruct.led_control = true; // TODO Zeitpunkt ausreichend?
@@ -541,10 +527,39 @@ bool calibration_setup(void) {
   return calibration_finished;
 }
 
+
+/*****************************************************************************************
+                                       FUNCTION INFO
+NAME: 
+    debug_print
+DESCRIPTION:
+    
+
+*****************************************************************************************/
 void debug_print(String print_string) {
 #ifdef DEBUG
   Serial.println(print_string);
-  Serial.println();
+#endif
+}
+
+/*****************************************************************************************
+                                       FUNCTION INFO
+NAME: 
+    calibration_setup
+DESCRIPTION:
+    
+
+*****************************************************************************************/
+void debug_led(int led_color) {
+#ifdef DEBUG
+  if (led_color == LED_RED) {
+    digitalWrite(LED_RED, HIGH);
+    digitalWrite(LED_GREEN, LOW);
+  }
+  if (led_color == LED_GREEN) {
+    digitalWrite(LED_RED, LOW);
+    digitalWrite(LED_GREEN, HIGH);
+  }
 #endif
 }
 
