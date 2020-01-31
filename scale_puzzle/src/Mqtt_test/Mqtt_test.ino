@@ -38,9 +38,9 @@ const char* Mqtt_terminal = "6/puzzle/terminal";
 const char* Msg_inactive = "{\"method\":\"status\",\"state\":\"inactive\"}";
 const char* Msg_active = "{\"method\":\"status\",\"state\":\"active\"}";
 const char* Msg_solved = "{\"method\":\"status\",\"state\":\"solved\"}";
-const char* Msg_green = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"2:2\"}";
-const char* Msg_red = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"1:2\"}";
-const char* Msg_orange = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"4:2\"}";
+const char* Msg_green = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"2:0\"}";
+const char* Msg_red = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"1:3\"}";
+const char* Msg_orange = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"4:3\"}";
 
 
 void setup() {
@@ -289,7 +289,7 @@ void set_safe_color(led_state_t color_state){
           color_message = Msg_green;
           break;
       }
-      if (client.publish(Safe_activate_topic, color_message, true) != false) {
+      if (client.publish(Safe_activate_topic, color_message, false) != false) {
         ScaleStruct.led_state = color_state;
       }
     }
