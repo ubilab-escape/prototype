@@ -24,7 +24,7 @@
 #define CLIENTID    "raspberry-terminal"
 #define TOPIC_TERMINAL       "6/puzzle/terminal"
 #define TOPIC_SCALE    "6/puzzle/scale"
-#define QOS         0
+#define QOS         1
 #define TIMEOUT     30000L
 
 enum states {inactive, active, solved, failed};
@@ -84,39 +84,24 @@ void publish_state(string str, MQTTClient* cl) {
 }
 void delivered(void *context, MQTTClient_deliveryToken dt)
 {
-    //printf("Message with token value %d delivery confirmed\n", dt);
     deliveredtoken = dt;
 }
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message)
 {
-    int i;
     string msg = (char*)message->payload;
     string str_topicName = topicName;
-    cout << str_topicName << endl << msg;
-    custom_print(str_topicName.c_str());
-    custom_print(msg.c_str());
-    
-    //bool scale_alarm;
-//    std::transform(msg.begin(), msg.end(), msg.begin(), ::tolower);
-    
-    // If there are status messages for the scale change scale_alarm accordingly
 
+    // If there are status messages for the scale change scale_alarm accordingly
     if (str_topicName.find("6/puzzle/scale") != std::string::npos) {
-        //custom_print(msg.c_str());
         if(msg.find("status") != std::string::npos) {
             if(msg.find("inactive") != std::string::npos) {
                 scale_alarm = false;
-                custom_print("inactive");
             }
             else if (msg.find("active") != std::string::npos) {
                 scale_alarm = true;
-                custom_print("active");
             }
         }
-    }/*
-    else if (str_topicName.find("6/puzzle/terminal") != std::string::npos) {
-        if(msg.find("trigger") != std::string::npos)
-    }  */  
+    } 
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
     return 1;
@@ -126,8 +111,8 @@ MQTTClient client;
 MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
 void connlost(void *context, char *cause)
 {
-    if (MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
-        custom_print("Failed to reconnect");
+    while (MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
+        usleep(1000000);
     }
 }
 
@@ -136,7 +121,7 @@ int main(int argc, char** argv) {
   // init mqtt
   MQTTClient_create(&client, ADDRESS, CLIENTID,
   MQTTCLIENT_PERSISTENCE_DEFAULT, NULL);
-  conn_opts.keepAliveInterval = 3;
+  conn_opts.keepAliveInterval = 20;
   conn_opts.cleansession = 1;
 
   MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, NULL);
@@ -171,10 +156,10 @@ int main(int argc, char** argv) {
   keypad(stdscr, true);
 
 
-  // show TileStruct before shuffeled
-  //clear();
-  //tstruct.draw(POSX, POSY);
-  //refresh();
+  //show TileStruct before shuffeled
+  clear();
+  tstruct.draw(POSX, POSY);
+  refresh();
 
   states current_state = inactive;
   publish_state("inactive", &client);
@@ -184,36 +169,26 @@ int main(int argc, char** argv) {
   while(1) {
     // waiting for activation
     while (current_state == inactive){
-      if(!scale_alarm) {
-          //custom_print(" Checking");
-            //clear();
-            //tstruct.draw(POSX, POSY);
-            //refresh();
-      FILE *fp_a = popen("sudo ./check_floppy.sh 2>&1", "r");
-      char buffer [120];
-      bool sd_found = false;
-      while (fgets(buffer, 120, fp_a) != NULL){
-        if(strstr(buffer, "/dev/sd") != NULL) {
-          sd_found = true;
-        }
-        else if (sd_found) { 
-          if(buffer[26] != '0') {
-            tstruct.shuffle();
-            clear();
-            tstruct.draw(POSX, POSY);
-            refresh();
-            current_state = active;
-            publish_state("active", &client);
-          }
-        }
-      }
+        if(!scale_alarm) {
+            FILE *fp_a = popen("sudo ./check_floppy.sh 2>&1", "r");
+            char buffer [120];
+            bool sd_found = false;
+            while (fgets(buffer, 120, fp_a) != NULL){
+                if(strstr(buffer, "/dev/sd") != NULL) {
+                sd_found = true;
+                }
+                else if (sd_found) { 
+                    if(buffer[26] != '0') {
+                        tstruct.shuffle();
+                        clear();
+                        tstruct.draw(POSX, POSY);
+                        refresh();
+                        current_state = active;
+                        publish_state("active", &client);
+                    }
+                }
+            }
       pclose(fp_a);
-      }
-      else {
-          //custom_print("Not Checking:");
-            //clear();
-            //tstruct.draw(POSX, POSY);
-            //refresh();
       }
     }
 
@@ -251,7 +226,7 @@ int main(int argc, char** argv) {
 
       if(sda_id > 0 && sda_id < 5) {
         tstruct.turnTilesRight(sda_id % 4);
-        //clear();
+        clear();
         tstruct.draw(POSX, POSY);
         refresh();    
         sda_id = 0;
@@ -282,8 +257,8 @@ int main(int argc, char** argv) {
       }
     }
     
-    while(current_state == solved || current_state == failed);
+    while(current_state == solved || current_state == failed) {
+        usleep(10000);
+    }
   }
-  //MQTTClient_disconnect(client, 10000);
-  //MQTTClient_destroy(&client); 
 }
