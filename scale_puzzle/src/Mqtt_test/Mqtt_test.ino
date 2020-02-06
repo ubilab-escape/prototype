@@ -35,8 +35,8 @@ const char* Safe_activate_topic = "5/safe/control";
 const char* Mqtt_topic = "6/puzzle/scale";
 const char* Mqtt_terminal = "6/puzzle/terminal";
 // MQTT Messages
-const char* Msg_inactive = "{\"method\":\"status\",\"state\":\"inactive\"}";
-const char* Msg_active = "{\"method\":\"status\",\"state\":\"active\"}";
+const char* Msg_inactive = "{\"method\": \"status\", \"state\": \"inactive\"}";
+const char* Msg_active = "{\"method\": \"status\", \"state\": \"active\"}";
 const char* Msg_solved = "{\"method\":\"status\",\"state\":\"solved\"}";
 const char* Msg_green = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"2:0\"}"; // Constant green
 const char* Msg_red = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"1:3\"}"; // Blinking red
@@ -162,9 +162,14 @@ void loop() {
   if ((ScaleStruct.puzzle_solved != false) && (ScaleStruct.puzzle_restart == false)) {
     ScaleStruct.state = PUZZLE_SOLVED;
   }
-  if ((ScaleStruct.puzzle_solved == false) && (ScaleStruct.puzzle_restart == true)) {
+  if ((ScaleStruct.puzzle_solved == false) && (ScaleStruct.puzzle_restart != false)) {
     ScaleStruct.puzzle_restart = false;
     ScaleStruct.state = RESTART;
+  }
+  if ((ScaleStruct.puzzle_solved != false) && (ScaleStruct.puzzle_restart != false)) {
+    ScaleStruct.state = PUZZLE_SOLVED;
+    ScaleStruct.puzzle_solved = false;
+    ScaleStruct.puzzle_restart = true;
   }
 
   // run mqtt handling
@@ -206,8 +211,6 @@ bool is_scale_unbalanced(void) {
   static int red_count = 0;
 
   if (scale_measure_floppy_disks() == 0) {
-    //debug_led(LED_GREEN);
-    //set_safe_color(LED_STATE_GREEN);
     red_count = 0;
   } else {
     red_count++;
@@ -234,10 +237,8 @@ bool is_scale_balanced(void) {
   static int old_reading = 4;
   static int new_reading = 4;
   static int green_count = 0;
-  
   int reading = scale_measure_floppy_disks();
    
-
   old_reading = new_reading;
   new_reading = reading;
   if (old_reading == new_reading) {
@@ -251,17 +252,10 @@ bool is_scale_balanced(void) {
         balanced = true;
       }
       
-    } /*else if (new_reading == 1 || new_reading == -1) {
-      set_safe_color(LED_STATE_ORANGE);
-      green_count = 0;
-    }*/ else {
-      // debug_led(LED_RED);
-      // set_safe_color(LED_STATE_RED);
+    } else {
       green_count = 0;
     }
   } else {
-    // debug_led(LED_RED);
-    // set_safe_color(LED_STATE_RED);
     green_count = 0;
   }
   
@@ -280,7 +274,7 @@ int scale_measure_floppy_disks() {
   int measure = 0;
   
   if (scale.is_ready()) {
-    measure = round(scale.get_units(15));
+    measure = round(scale.get_units(12));
 
     debug_print("Value for known weight is: ");
     debug_print(String(measure));
@@ -508,7 +502,14 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
         ScaleStruct.puzzle_start = true;
         ScaleStruct.led_control = true;
       } else if (String(state1).equals("off") != false){
-        ScaleStruct.puzzle_start = false;
+        if (String(daten).equals("skipped") != false) {
+          debug_print("Puzzle Skipped");
+          ScaleStruct.puzzle_solved = true;
+          ScaleStruct.puzzle_restart = true;
+        } else {
+          debug_print("Restart Puzzle");
+          ScaleStruct.puzzle_restart = true;
+        }
       }
     } else if (String(method1).equals("") != false) {
       debug_print("Restart Puzzle");

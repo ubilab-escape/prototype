@@ -2,7 +2,7 @@
 #define Mqtt_test_H
 
 #define GREEN_DELAY 1
-#define RED_DELAY 3
+#define RED_DELAY 2
 
 // State variables
 typedef enum {INIT, WIFI_SETUP, MQTT_SETUP, MQTT_CONNECT, PUZZLE_START,
