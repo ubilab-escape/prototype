@@ -38,9 +38,9 @@ const char* Mqtt_terminal = "6/puzzle/terminal";
 const char* Msg_inactive = "{\"method\":\"status\",\"state\":\"inactive\"}";
 const char* Msg_active = "{\"method\":\"status\",\"state\":\"active\"}";
 const char* Msg_solved = "{\"method\":\"status\",\"state\":\"solved\"}";
-const char* Msg_green = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"2:0\"}";
-const char* Msg_red = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"1:3\"}";
-const char* Msg_orange = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"4:3\"}";
+const char* Msg_green = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"2:0\"}"; // Constant green
+const char* Msg_red = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"1:3\"}"; // Blinking red
+const char* Msg_orange = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"4:3\"}"; // Blinking orange
 
 
 void setup() {
@@ -91,7 +91,6 @@ void loop() {
       break;
     case SCALE_CALIBRATION:
       if (calibration_setup() != false) {
-        ScaleStruct.scale_measure = true;
         debug_print(String(ScaleStruct.state));
         if (client.publish(Mqtt_topic, Msg_inactive, true) != false) {
           ScaleStruct.state = WAIT_FOR_BEGIN;
@@ -105,7 +104,7 @@ void loop() {
       }
       break;
     case SCALE_GREEN:
-      if (ScaleStruct.floppys_taken != false) {
+      if (is_scale_unbalanced() != false) {
         debug_print(String(ScaleStruct.state));
         if (client.publish(Mqtt_topic, Msg_active, true) != false) {
           ScaleStruct.state = SCALE_RED;
@@ -113,7 +112,7 @@ void loop() {
       }
       break;
     case SCALE_RED:
-      if (ScaleStruct.floppys_taken == false) {
+      if (is_scale_balanced() != false) {
         debug_print(String(ScaleStruct.state));
         if (client.publish(Mqtt_topic, Msg_inactive, true) != false) {
           ScaleStruct.state = SCALE_GREEN;
@@ -175,11 +174,6 @@ void loop() {
 
   delay(100);
   
-  // run scale measurements
-  if (ScaleStruct.scale_measure != false) {
-    scale_loop();
-  }
-
   // run network and mqtt checks approx. every 5s
   if (ScaleStruct.connection_check_counter > 49) {
     if ((ScaleStruct.state > WIFI_SETUP) && 
@@ -200,67 +194,104 @@ void loop() {
   ScaleStruct.connection_check_counter += 1;
 }
 
+/*****************************************************************************************
+                                       FUNCTION INFO
+NAME: 
+    scale_unbalanced
+DESCRIPTION:
+    
+*****************************************************************************************/
+bool is_scale_unbalanced(void) {
+  bool unbalanced = false;
+  static int red_count = 0;
+
+  if (scale_measure_floppy_disks() == 0) {
+    //debug_led(LED_GREEN);
+    //set_safe_color(LED_STATE_GREEN);
+    red_count = 0;
+  } else {
+    red_count++;
+    if (red_count == RED_DELAY) {
+      debug_led(LED_RED);
+      set_safe_color(LED_STATE_RED);
+      red_count = 0;
+      unbalanced = true;
+    }
+  }
+
+  return unbalanced;
+}
 
 /*****************************************************************************************
                                        FUNCTION INFO
 NAME: 
-    scale_loop
+    scale_balanced
 DESCRIPTION:
     
 *****************************************************************************************/
-void scale_loop() {
+bool is_scale_balanced(void) {
+  bool balanced = false;
   static int old_reading = 4;
   static int new_reading = 4;
   static int green_count = 0;
   
-  if (scale.is_ready()) {
-    int reading = round(scale.get_units(3));
+  int reading = scale_measure_floppy_disks();
+   
 
-    if (ScaleStruct.state == SCALE_GREEN) {
-      if (reading == 0) {
+  old_reading = new_reading;
+  new_reading = reading;
+  if (old_reading == new_reading) {
+    if (new_reading == 0) {
+      green_count++;
+      
+      if (green_count == GREEN_DELAY) {
         debug_led(LED_GREEN);
         set_safe_color(LED_STATE_GREEN);
-      } else {
-        ScaleStruct.floppys_taken = true;
-        set_safe_color(LED_STATE_RED);
-      }
-    }
-
-    if (ScaleStruct.state == SCALE_RED) {
-      debug_print("Value for known weight is: ");
-      debug_print(String(reading));
-      
-      old_reading = new_reading;
-      new_reading = reading;
-      if (old_reading == new_reading) {
-        if (new_reading == 0) {
-          green_count = green_count + 1;
-          debug_led(LED_GREEN);
-          set_safe_color(LED_STATE_GREEN);
-          
-          if (green_count == 3) {
-            ScaleStruct.floppys_taken = false;
-          }
-        } else if (new_reading == 1 || new_reading == -1) {
-          set_safe_color(LED_STATE_ORANGE);
-          green_count = 0;
-        } else {
-          debug_led(LED_RED);
-          set_safe_color(LED_STATE_RED);
-          green_count = 0;
-        }
-      } else {
-        debug_led(LED_RED);
-        set_safe_color(LED_STATE_RED);
         green_count = 0;
+        balanced = true;
       }
+      
+    } /*else if (new_reading == 1 || new_reading == -1) {
+      set_safe_color(LED_STATE_ORANGE);
+      green_count = 0;
+    }*/ else {
+      // debug_led(LED_RED);
+      // set_safe_color(LED_STATE_RED);
+      green_count = 0;
     }
+  } else {
+    // debug_led(LED_RED);
+    // set_safe_color(LED_STATE_RED);
+    green_count = 0;
+  }
+  
+  return balanced;
+}
+
+
+/*****************************************************************************************
+                                       FUNCTION INFO
+NAME: 
+    scale_measure_floppy_disks
+DESCRIPTION:
+    
+*****************************************************************************************/
+int scale_measure_floppy_disks() {
+  int measure = 0;
+  
+  if (scale.is_ready()) {
+    measure = round(scale.get_units(15));
+
+    debug_print("Value for known weight is: ");
+    debug_print(String(measure));
   } else {
     debug_print("HX711 not found.");
     
     // TODO Go to Error State
     delay(1000);
   }
+
+  return measure;
 }
 
 /*****************************************************************************************
@@ -321,9 +352,7 @@ void ReInitScalePuzzleStructure(void) {
   ScaleStruct.reconnect_state = ERROR_STATE; // TODO welcher state sinnvoll?
   ScaleStruct.led_state = LED_STATE_GREEN;
   ScaleStruct.puzzle_start = false;
-  ScaleStruct.scale_measure = false;
   ScaleStruct.led_control = false;
-  ScaleStruct.floppys_taken = false;
   ScaleStruct.puzzle_solved = false;
   ScaleStruct.puzzle_restart = false;
 }
@@ -477,7 +506,7 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
       if (String(state1).equals("on") != false) {
         debug_print("Start Puzzle");
         ScaleStruct.puzzle_start = true;
-        ScaleStruct.led_control = true; // TODO Zeitpunkt ausreichend?
+        ScaleStruct.led_control = true;
       } else if (String(state1).equals("off") != false){
         ScaleStruct.puzzle_start = false;
       }

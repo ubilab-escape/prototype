@@ -1,6 +1,9 @@
 #ifndef Mqtt_test_H
 #define Mqtt_test_H
 
+#define GREEN_DELAY 1
+#define RED_DELAY 3
+
 // State variables
 typedef enum {INIT, WIFI_SETUP, MQTT_SETUP, MQTT_CONNECT, PUZZLE_START,
               SCALE_CALIBRATION, WAIT_FOR_BEGIN, SCALE_GREEN, SCALE_RED,
@@ -16,9 +19,7 @@ typedef struct ScalePuzzle_HandlerType_Tag {
   led_state_t led_state;
   bool puzzle_start;
   bool mqtt_connected;
-  bool scale_measure;
   bool led_control;
-  bool floppys_taken;
   bool puzzle_solved;
   bool puzzle_restart;
   uint8_t connection_check_counter;
