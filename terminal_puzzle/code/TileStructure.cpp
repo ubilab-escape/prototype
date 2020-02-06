@@ -166,6 +166,26 @@ void TileStructure::draw(int posX, int posY) {
     }
 }
 
+// function: Draw the original TileStructure
+void TileStructure::drawInitial(int posX, int posY) {
+    int N = _initial_tiles.size();
+    int T = _initial_tiles[0][0]._pixels.size();
+    start_color();
+    use_default_colors();
+    init_pair(1, COLOR_RED, -1);
+    init_pair(2, COLOR_GREEN, -1);
+    init_pair(3, COLOR_BLUE, -1);
+    init_pair(4, COLOR_YELLOW, -1);
+    init_pair(5, COLOR_MAGENTA, -1);
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            attron(COLOR_PAIR(_initial_tiles[i][j]._type + 1));
+            _initial_tiles[i][j].draw(posX + 2*j*T, posY + i*T);
+            attroff(COLOR_PAIR(_initial_tiles[i][j]._type + 1));
+        }
+    }
+}
+
 // function: applies 20 random turn functions to TileStructure.
 void TileStructure::shuffle() {
     int randtype = 0;
@@ -193,6 +213,15 @@ void TileStructure::colorWhite() {
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
             _tiles[i][j]._type = 4;
+        }
+    }
+}
+
+void TileStructure::colorWhiteInitial() {
+    int N = _initial_tiles.size();
+    for (int i = 0; i < N; i++) {
+        for (int j = 0; j < N; j++) {
+            _initial_tiles[i][j]._type = 4;
         }
     }
 }

@@ -1,5 +1,5 @@
 // Copyright 2019
-    extern "C" {
+extern "C" {
     #include "MQTTClient.h"
     #include "MQTTClientPersistence.h"
     }
@@ -32,7 +32,11 @@ enum states {inactive, active, solved, failed};
 using namespace std;
 
 volatile bool scale_alarm = false;
+volatile bool trigger_on = false;
+volatile bool trigger_skipped = false;
+volatile bool trigger_off = false;
 volatile MQTTClient_deliveryToken deliveredtoken;
+volatile states current_state = inactive;
 
 void custom_print(char* s) {
   clear();
@@ -95,13 +99,26 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
     if (str_topicName.find("6/puzzle/scale") != std::string::npos) {
         if(msg.find("status") != std::string::npos) {
             if(msg.find("inactive") != std::string::npos) {
-                scale_alarm = false;
+                scale_alarm = false; // Change to true for no alarm dependency
             }
             else if (msg.find("active") != std::string::npos) {
                 scale_alarm = true;
             }
         }
     } 
+    else if (str_topicName.find("6/puzzle/terminal") != std::string::npos) {
+        if(msg.find("trigger") != std::string::npos && msg.find("skipped") != std::string::npos) {
+            current_state = solved;
+            trigger_skipped = true;
+        }
+        else if (msg.find("trigger") != std::string::npos && msg.find("on") != std::string::npos) {
+            current_state = inactive;
+            trigger_on = true;
+        }
+        else if (msg.find("trigger") != std::string::npos && msg.find("off") != std::string::npos) {
+            current_state = solved;
+        }
+    }
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
     return 1;
@@ -109,6 +126,7 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
 
 MQTTClient client;
 MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+
 void connlost(void *context, char *cause)
 {
     while (MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
@@ -136,8 +154,6 @@ int main(int argc, char** argv) {
   MQTTClient_subscribe(client, TOPIC_TERMINAL, QOS);
   MQTTClient_subscribe(client, TOPIC_SCALE, QOS);
 
-  
-
   zoom_out(10);
 
   // init TileStructure
@@ -161,7 +177,7 @@ int main(int argc, char** argv) {
   tstruct.draw(POSX, POSY);
   refresh();
 
-  states current_state = inactive;
+  current_state = inactive;
   publish_state("inactive", &client);
 
 
@@ -169,6 +185,13 @@ int main(int argc, char** argv) {
   while(1) {
     // waiting for activation
     while (current_state == inactive){
+        if(trigger_on) {
+            tstruct = TileStructure("STASIS.txt");
+            clear();
+            tstruct.drawInitial(POSX, POSY);
+            refresh();
+            trigger_on = false;
+        }
         if(!scale_alarm) {
             FILE *fp_a = popen("sudo ./check_floppy.sh 2>&1", "r");
             char buffer [120];
@@ -234,7 +257,6 @@ int main(int argc, char** argv) {
 
       if(sdb_id > 0 && sdb_id < 5) {
         tstruct.turnTilesAround(sdb_id % 4);
-        //clear();
         tstruct.draw(POSX, POSY);
         refresh();   
         sdb_id = 0; 
@@ -258,6 +280,13 @@ int main(int argc, char** argv) {
     }
     
     while(current_state == solved || current_state == failed) {
+        if(trigger_skipped) {
+            tstruct.colorWhiteInitial();
+            clear();
+            tstruct.drawInitial(POSX, POSY);
+            refresh();
+            trigger_skipped = false;
+        }
         usleep(10000);
     }
   }

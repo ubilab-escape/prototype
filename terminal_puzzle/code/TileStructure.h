@@ -23,7 +23,9 @@ class TileStructure {
     void shuffle();
     bool solved();
     void draw(int posX, int posY);
+    void drawInitial(int posX, int posY);
     void colorWhite();
+    void colorWhiteInitial();
     int size(); 
     friend std::ostream & operator<< (std::ostream &out,
                          const TileStructure &tileStruct);
