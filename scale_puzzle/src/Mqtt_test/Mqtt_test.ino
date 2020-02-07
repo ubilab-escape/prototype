@@ -10,31 +10,27 @@
 
 //#define DEBUG
 
-// HX711 circuit wiring
+/* State machine variables */
+ScalePuzzle_HandlerType ScaleStruct;
+
+/* Scale variables */
+HX711 scale;
+const long scale_divider = 7000;
 const int LOADCELL_DOUT_PIN = 13;
 const int LOADCELL_SCK_PIN = 12;
 const int LED_GREEN = 0;
 const int LED_RED = 5; 
 
-HX711 scale;
-const long scale_divider = 7000;
-
-ScalePuzzle_HandlerType ScaleStruct;
-
-// WiFi, Mqtt init
+/* WiFi, Mqtt variables */
 WiFiClient espClient;
 PubSubClient client(espClient);
-long lastMsg = 0;
-char msg[50];
-int value = 0;
-int test_var = 0;
 StaticJsonDocument<300> rxdoc;
 
-// MQTT Topics
+/* MQTT Topics */
 const char* Safe_activate_topic = "5/safe/control";
 const char* Mqtt_topic = "6/puzzle/scale";
 const char* Mqtt_terminal = "6/puzzle/terminal";
-// MQTT Messages
+/* MQTT Messages */
 const char* Msg_inactive = "{\"method\": \"status\", \"state\": \"inactive\"}";
 const char* Msg_active = "{\"method\": \"status\", \"state\": \"active\"}";
 const char* Msg_solved = "{\"method\":\"status\",\"state\":\"solved\"}";
@@ -42,6 +38,7 @@ const char* Msg_green = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"2:0
 const char* Msg_red = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"1:3\"}"; // Blinking red
 const char* Msg_orange = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"4:3\"}"; // Blinking orange
 
+/* Arduino main functions */
 
 void setup() {
 #ifdef DEBUG
@@ -169,7 +166,6 @@ void loop() {
   if ((ScaleStruct.puzzle_solved != false) && (ScaleStruct.puzzle_restart != false)) {
     ScaleStruct.state = PUZZLE_SOLVED;
     ScaleStruct.puzzle_solved = false;
-    ScaleStruct.puzzle_restart = true;
   }
 
   // run mqtt handling
@@ -199,127 +195,7 @@ void loop() {
   ScaleStruct.connection_check_counter += 1;
 }
 
-/*****************************************************************************************
-                                       FUNCTION INFO
-NAME: 
-    scale_unbalanced
-DESCRIPTION:
-    
-*****************************************************************************************/
-bool is_scale_unbalanced(void) {
-  bool unbalanced = false;
-  static int red_count = 0;
-
-  if (scale_measure_floppy_disks() == 0) {
-    red_count = 0;
-  } else {
-    red_count++;
-    if (red_count == RED_DELAY) {
-      debug_led(LED_RED);
-      set_safe_color(LED_STATE_RED);
-      red_count = 0;
-      unbalanced = true;
-    }
-  }
-
-  return unbalanced;
-}
-
-/*****************************************************************************************
-                                       FUNCTION INFO
-NAME: 
-    scale_balanced
-DESCRIPTION:
-    
-*****************************************************************************************/
-bool is_scale_balanced(void) {
-  bool balanced = false;
-  static int old_reading = 4;
-  static int new_reading = 4;
-  static int green_count = 0;
-  int reading = scale_measure_floppy_disks();
-   
-  old_reading = new_reading;
-  new_reading = reading;
-  if (old_reading == new_reading) {
-    if (new_reading == 0) {
-      green_count++;
-      
-      if (green_count == GREEN_DELAY) {
-        debug_led(LED_GREEN);
-        set_safe_color(LED_STATE_GREEN);
-        green_count = 0;
-        balanced = true;
-      }
-      
-    } else {
-      green_count = 0;
-    }
-  } else {
-    green_count = 0;
-  }
-  
-  return balanced;
-}
-
-
-/*****************************************************************************************
-                                       FUNCTION INFO
-NAME: 
-    scale_measure_floppy_disks
-DESCRIPTION:
-    
-*****************************************************************************************/
-int scale_measure_floppy_disks() {
-  int measure = 0;
-  
-  if (scale.is_ready()) {
-    measure = round(scale.get_units(12));
-
-    debug_print("Value for known weight is: ");
-    debug_print(String(measure));
-  } else {
-    debug_print("HX711 not found.");
-    
-    // TODO Go to Error State
-    delay(1000);
-  }
-
-  return measure;
-}
-
-/*****************************************************************************************
-                                       FUNCTION INFO
-NAME: 
-    set_safe_color
-DESCRIPTION:
-    
-*****************************************************************************************/
-void set_safe_color(led_state_t color_state){
-  const char* color_message;
-  
-  if (ScaleStruct.led_control != false) {
-    if ((ScaleStruct.led_state != color_state)) {
-      switch (color_state) {
-        case LED_STATE_GREEN:
-          color_message = Msg_green;
-          break;
-        case LED_STATE_ORANGE:
-          color_message = Msg_orange;
-          break;
-        case LED_STATE_RED:
-          color_message = Msg_red;
-          break;
-        default:
-          color_message = Msg_green;
-          break;
-      }
-      if (client.publish(Safe_activate_topic, color_message, false) != false) {
-        ScaleStruct.led_state = color_state;
-      }
-    }
-  }
-}
+/* State Machine functions */
 
 /*****************************************************************************************
                                        FUNCTION INFO
@@ -462,73 +338,6 @@ bool mqtt_check(void) {
   return mqtt_check_finished;
 }
 
-
-/*****************************************************************************************
-                                       FUNCTION INFO
-NAME: 
-    mqtt_callback
-DESCRIPTION:
-    
-
-*****************************************************************************************/
-void mqtt_callback(char* topic, byte* message, unsigned int length) {
-  debug_print("Message arrived on topic: ");
-  debug_print(topic);
-  debug_print(". Message: ");
-
-  String messageTemp;
-  
-  for (unsigned int i = 0; i < length; i++) {
-    messageTemp += (char)message[i];
-  }
-  debug_print(messageTemp);
-  
-  deserializeJson(rxdoc, message);
-  const char* method1 = rxdoc["method"];
-  const char* state1 = rxdoc["state"];
-  const char* daten = rxdoc["data"];
-  /*debug_print("Methode: "); 
-  debug_print(method1);
-  debug_print("State: "); 
-  debug_print(state1);
-  debug_print("Daten: "); 
-  debug_print(daten);*/
-
-  // If a message is received on the topic 6/puzzle/scale, check the message.
-  if (String(topic).equals(Mqtt_topic) != false) {
-    if (String(method1).equals("trigger") != false) {
-      if (String(state1).equals("on") != false) {
-        debug_print("Start Puzzle");
-        ScaleStruct.puzzle_start = true;
-        ScaleStruct.led_control = true;
-      } else if (String(state1).equals("off") != false){
-        if (String(daten).equals("skipped") != false) {
-          debug_print("Puzzle Skipped");
-          ScaleStruct.puzzle_solved = true;
-          ScaleStruct.puzzle_restart = true;
-        } else {
-          debug_print("Restart Puzzle");
-          ScaleStruct.puzzle_restart = true;
-        }
-      }
-    } else if (String(method1).equals("") != false) {
-      debug_print("Restart Puzzle");
-      ScaleStruct.puzzle_restart = true;
-    }
-  }
-
-  // If a message is received on the topic 6/puzzle/terminal, check the message.
-  if (String(topic).equals(Mqtt_terminal) != false) {
-    if (String(method1).equals("status") != false) {
-      if (String(state1).equals("active") != false) {
-        debug_print("Puzzle Solved");
-        ScaleStruct.puzzle_solved = true;
-      }
-    }
-  }
-
-}
-
 /*****************************************************************************************
                                        FUNCTION INFO
 NAME: 
@@ -557,6 +366,191 @@ bool calibration_setup(void) {
   return calibration_finished;
 }
 
+/*****************************************************************************************
+                                       FUNCTION INFO
+NAME: 
+    is_scale_unbalanced
+DESCRIPTION:
+    
+*****************************************************************************************/
+bool is_scale_unbalanced(void) {
+  bool unbalanced = false;
+  static int red_count = 0;
+
+  if (scale_measure_floppy_disks() == 0) {
+    red_count = 0;
+  } else {
+    red_count++;
+    if (red_count == RED_DELAY) {
+      debug_led(LED_RED);
+      set_safe_color(LED_STATE_RED);
+      red_count = 0;
+      unbalanced = true;
+    }
+  }
+
+  return unbalanced;
+}
+
+/*****************************************************************************************
+                                       FUNCTION INFO
+NAME: 
+    is_scale_balanced
+DESCRIPTION:
+    
+*****************************************************************************************/
+bool is_scale_balanced(void) {
+  bool balanced = false;
+  static int old_reading = 4;
+  static int new_reading = 4;
+  static int green_count = 0;
+  int reading = scale_measure_floppy_disks();
+   
+  old_reading = new_reading;
+  new_reading = reading;
+  if (old_reading == new_reading) {
+    if (new_reading == 0) {
+      green_count++;
+      
+      if (green_count == GREEN_DELAY) {
+        debug_led(LED_GREEN);
+        set_safe_color(LED_STATE_GREEN);
+        green_count = 0;
+        balanced = true;
+      }
+      
+    } else {
+      green_count = 0;
+    }
+  } else {
+    green_count = 0;
+  }
+  
+  return balanced;
+}
+
+/* Utility Functions */
+
+/*****************************************************************************************
+                                       FUNCTION INFO
+NAME: 
+    mqtt_callback
+DESCRIPTION:
+    
+
+*****************************************************************************************/
+void mqtt_callback(char* topic, byte* message, unsigned int length) {
+  debug_print("Message arrived on topic: ");
+  debug_print(topic);
+  debug_print(". Message: ");
+
+  String messageTemp;
+  
+  for (unsigned int i = 0; i < length; i++) {
+    messageTemp += (char)message[i];
+  }
+  debug_print(messageTemp);
+  
+  deserializeJson(rxdoc, message);
+  const char* method1 = rxdoc["method"];
+  const char* state1 = rxdoc["state"];
+  const char* data1 = rxdoc["data"];
+  /*debug_print("Methode: "); 
+  debug_print(method1);
+  debug_print("State: "); 
+  debug_print(state1);
+  debug_print("Daten: "); 
+  debug_print(daten);*/
+
+  // If a message is received on the topic 6/puzzle/scale, check the message.
+  if (String(topic).equals(Mqtt_topic) != false) {
+    if (String(method1).equals("trigger") != false) {
+      if (String(state1).equals("on") != false) {
+        debug_print("Start Puzzle");
+        ScaleStruct.puzzle_start = true;
+        ScaleStruct.led_control = true;
+      } else if (String(state1).equals("off") != false){
+        if (String(data1).equals("skipped") != false) {
+          debug_print("Puzzle Skipped");
+          ScaleStruct.puzzle_solved = true;
+          ScaleStruct.puzzle_restart = true;
+        } else {
+          debug_print("Restart Puzzle");
+          ScaleStruct.puzzle_restart = true;
+        }
+      }
+    }
+  }
+
+  // If a message is received on the topic 6/puzzle/terminal, check the message.
+  if (String(topic).equals(Mqtt_terminal) != false) {
+    if (String(method1).equals("status") != false) {
+      if (String(state1).equals("active") != false) {
+        debug_print("Puzzle Solved");
+        ScaleStruct.puzzle_solved = true;
+      }
+    }
+  }
+
+}
+
+/*****************************************************************************************
+                                       FUNCTION INFO
+NAME: 
+    scale_measure_floppy_disks
+DESCRIPTION:
+    
+*****************************************************************************************/
+int scale_measure_floppy_disks() {
+  int measure = 0;
+  
+  if (scale.is_ready()) {
+    measure = round(scale.get_units(10));
+
+    debug_print("Value for known weight is: ");
+    debug_print(String(measure));
+  } else {
+    debug_print("HX711 not found.");
+    
+    // TODO Go to Error State
+    delay(1000);
+  }
+
+  return measure;
+}
+
+/*****************************************************************************************
+                                       FUNCTION INFO
+NAME: 
+    set_safe_color
+DESCRIPTION:
+    
+*****************************************************************************************/
+void set_safe_color(led_state_t color_state){
+  const char* color_message;
+  
+  if (ScaleStruct.led_control != false) {
+    if ((ScaleStruct.led_state != color_state)) {
+      switch (color_state) {
+        case LED_STATE_GREEN:
+          color_message = Msg_green;
+          break;
+        case LED_STATE_ORANGE:
+          color_message = Msg_orange;
+          break;
+        case LED_STATE_RED:
+          color_message = Msg_red;
+          break;
+        default:
+          color_message = Msg_green;
+          break;
+      }
+      if (client.publish(Safe_activate_topic, color_message, false) != false) {
+        ScaleStruct.led_state = color_state;
+      }
+    }
+  }
+}
 
 /*****************************************************************************************
                                        FUNCTION INFO
