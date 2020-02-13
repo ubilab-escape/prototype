@@ -68,6 +68,7 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
     string msg = (char*)message->payload;
     string str_topicName = topicName;
 
+
     if (str_topicName.find("6/puzzle/terminal") != std::string::npos) {
         if(msg.find("trigger") != std::string::npos && msg.find("skipped") != std::string::npos) {
             current_state = solved;
@@ -90,9 +91,10 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
 
 void connlost(void *context, char *cause)
 {
-  while(MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
-    std::this_thread::sleep_for(std::chrono::microseconds(5000));
-  };
+//   while(MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
+//     std::this_thread::sleep_for(std::chrono::microseconds(5000));
+//   };
+MQTTClient_connect(client, &conn_opts);
 }
 
 int main(int argc, char** argv) {
@@ -105,11 +107,11 @@ int main(int argc, char** argv) {
 
   MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, NULL);
 
-  while(MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
-    std::this_thread::sleep_for(std::chrono::microseconds(5000));
-  };
+//   while(MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
+//     std::this_thread::sleep_for(std::chrono::microseconds(5000));
+//   };
   
-
+    MQTTClient_connect(client, &conn_opts)
   MQTTClient_subscribe(client, TOPIC_TERMINAL, QOS);
   MQTTClient_subscribe(client, TOPIC_SCALE, QOS);
 
@@ -226,7 +228,7 @@ int main(int argc, char** argv) {
       auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
       auto sleep_duration = 2000000-duration;
       if (sleep_duration > 0) {
-        std::this_thread::sleep_for(std::chrono::microseconds(sleep_duration));
+        // std::this_thread::sleep_for(std::chrono::microseconds(sleep_duration));
       }
       
       if (tstruct.solved()) {
@@ -248,7 +250,7 @@ int main(int argc, char** argv) {
             publish_state("inactive", &client);
         }
         if(trigger_off) {
-            trigger_off =false;
+            trigger_off = false;
             publish_state("inactive", &client);
         }
     }
