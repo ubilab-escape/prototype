@@ -91,7 +91,7 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
 void connlost(void *context, char *cause)
 {
     while (MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
-        usleep(1000000);
+        usleep(100000);
     }
 }
 
@@ -105,12 +105,9 @@ int main(int argc, char** argv) {
 
   MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, NULL);
 
-  int rc;
-  if ((rc = MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS)
-  {
-      custom_print("Failed to connect");
-      while(1);
-  }
+    while (MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
+        usleep(100000);
+    }
 
   MQTTClient_subscribe(client, TOPIC_TERMINAL, QOS);
   MQTTClient_subscribe(client, TOPIC_SCALE, QOS);
