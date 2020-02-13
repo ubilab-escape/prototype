@@ -90,9 +90,7 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
 
 void connlost(void *context, char *cause)
 {
-    while (MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
-        usleep(100000);
-    }
+    while (MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS));
 }
 
 int main(int argc, char** argv) {
@@ -105,9 +103,8 @@ int main(int argc, char** argv) {
 
   MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, NULL);
 
-    while (MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
-        usleep(100000);
-    }
+  while(MQTTClient_connect(client, &conn_opts)) != MQTTCLIENT_SUCCESS));
+  
 
   MQTTClient_subscribe(client, TOPIC_TERMINAL, QOS);
   MQTTClient_subscribe(client, TOPIC_SCALE, QOS);
@@ -149,10 +146,29 @@ int main(int argc, char** argv) {
             tstruct.draw(POSX, POSY);
             refresh();
             trigger_on = false;
-            publish_state("active", &client);
-            current_state = active;
+            publish_state("inactive", &client);
         }
+        FILE *fp_a = popen("sudo ./check_floppy.sh 2>&1", "r");
+        char buffer [120];
+        bool sd_found = false;
+        while (fgets(buffer, 120, fp_a) != NULL){
+            if(strstr(buffer, "/dev/sd") != NULL) {
+            sd_found = true;
+            }
+            else if (sd_found) { 
+                if(buffer[26] != '0') {
+                    tstruct.shuffle();
+                    clear();
+                    tstruct.draw(POSX, POSY);
+                    refresh();
+                    current_state = active;
+                    publish_state("active", &client);
+                }
+            }
+        }
+      pclose(fp_a);
       }
+    }
 
     // riddle is active
     while (current_state == active) {
@@ -207,7 +223,6 @@ int main(int argc, char** argv) {
       auto sleep_duration = 2000000-duration;
       if (sleep_duration > 0) {
         std::this_thread::sleep_for(std::chrono::microseconds(sleep_duration));
-        ;//usleep(sleep_duration);
       }
       
       if (tstruct.solved()) {
@@ -232,7 +247,6 @@ int main(int argc, char** argv) {
             trigger_off =false;
             publish_state("inactive", &client);
         }
-        //usleep(1000000);
     }
   }
 }
