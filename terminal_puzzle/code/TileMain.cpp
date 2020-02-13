@@ -90,7 +90,9 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
 
 void connlost(void *context, char *cause)
 {
-    while(MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS);
+  while(MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
+    std::this_thread::sleep_for(std::chrono::microseconds(5000));
+  };
 }
 
 int main(int argc, char** argv) {
@@ -103,7 +105,9 @@ int main(int argc, char** argv) {
 
   MQTTClient_setCallbacks(client, NULL, connlost, msgarrvd, NULL);
 
-  while(MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS);
+  while(MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
+    std::this_thread::sleep_for(std::chrono::microseconds(5000));
+  };
   
 
   MQTTClient_subscribe(client, TOPIC_TERMINAL, QOS);
