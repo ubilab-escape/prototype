@@ -71,15 +71,12 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
 
     if (str_topicName.find("6/puzzle/terminal") != std::string::npos) {
         if(msg.find("trigger") != std::string::npos && msg.find("skipped") != std::string::npos) {
-            current_state = solved;
             trigger_skipped = true;
         }
         else if (msg.find("trigger") != std::string::npos && msg.find("on") != std::string::npos) {
-            current_state = inactive;
             trigger_on = true;
         }
         else if (msg.find("trigger") != std::string::npos && msg.find("off") != std::string::npos) {
-            current_state = solved;
             trigger_off = true;
         }
     }
@@ -154,6 +151,9 @@ int main(int argc, char** argv) {
             trigger_on = false;
             publish_state("inactive", &client);
         }
+        else if(trigger_off || trigger_skipped) {
+            current_state = solved;
+        }
         FILE *fp_a = popen("sudo ./check_floppy.sh 2>&1", "r");
         char buffer [120];
         bool sd_found = false;
@@ -178,6 +178,13 @@ int main(int argc, char** argv) {
 
     // riddle is active
     while (current_state == active) {
+        if(trigger_skipped || trigger_off) {
+            current_state = solved;
+        }
+        if (trigger_on) {
+            trigger_on = false;
+            publish_state("active");
+        }
       auto t1 = std::chrono::high_resolution_clock::now();
       FILE *fp_a = popen("sudo ./check_floppy.sh 2>&1", "r");
       char buffer [120];
