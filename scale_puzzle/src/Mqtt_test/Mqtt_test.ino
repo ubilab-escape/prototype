@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
-
+/* define keepalive settings before PubSubClient.h */
 #define MQTT_KEEPALIVE 10
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
@@ -8,6 +8,7 @@
 #include "Mqtt_test.h"
 #include "wifi_pw.h"
 
+/* uncomment to activate debug mode */
 //#define DEBUG
 
 /* State machine variables */
@@ -38,6 +39,7 @@ const char* Msg_green = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"2:0
 const char* Msg_red = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"1:3\"}"; // Blinking red
 const char* Msg_orange = "{\"method\":\"trigger\",\"state\":\"on\",\"data\":\"4:3\"}"; // Blinking orange
 
+
 /* Arduino main functions */
 
 void setup() {
@@ -51,7 +53,7 @@ void setup() {
 }
 
 void loop() {
-
+  /* scale puzzle state machine */
   switch (ScaleStruct.state) {
     case INIT:
       InitScalePuzzleStructure();
@@ -95,7 +97,7 @@ void loop() {
       }
       break;
     case WAIT_FOR_BEGIN:
-      if (mqtt_check() != false) {
+      if (ScaleStruct.puzzle_start != false) {
         debug_print(String(ScaleStruct.state));
         ScaleStruct.state = SCALE_GREEN;
       }
@@ -144,7 +146,7 @@ void loop() {
       ScaleStruct.state = INIT;
       break;     
     case ERROR_STATE:
-    // TODO Disconnect from WIFI
+      WiFi.disconnect();
       debug_print(String(ScaleStruct.state));
       ScaleStruct.state = INIT;
       break;    
@@ -156,27 +158,30 @@ void loop() {
       break;
   }
 
-  // immediately switch to the solved state when the terminal puzzle begins or the operator determines it
+  /* puzzle solved trigger or skip puzzle trigger arrived */
   if ((ScaleStruct.puzzle_solved != false) && (ScaleStruct.puzzle_restart == false)) {
     ScaleStruct.state = PUZZLE_SOLVED;
   }
+  /* restart trigger arrived */
   if ((ScaleStruct.puzzle_solved == false) && (ScaleStruct.puzzle_restart != false)) {
     ScaleStruct.puzzle_restart = false;
     ScaleStruct.state = RESTART;
   }
+  /* restart if both triggers are sent */
   if ((ScaleStruct.puzzle_solved != false) && (ScaleStruct.puzzle_restart != false)) {
-    ScaleStruct.state = PUZZLE_SOLVED;
+    ScaleStruct.state = RESTART;
     ScaleStruct.puzzle_solved = false;
+    ScaleStruct.puzzle_restart = false;
   }
 
-  // run mqtt handling
+  /* run mqtt handling */
   if (ScaleStruct.mqtt_connected != false) {
     client.loop();
   }
 
   delay(100);
   
-  // run network and mqtt checks approx. every 5s
+  /* run wifi and mqtt checks approx. every 5s */
   if (ScaleStruct.connection_check_counter > 49) {
     if ((ScaleStruct.state > WIFI_SETUP) && 
         (ScaleStruct.state < WIFI_LOST) && 
@@ -210,6 +215,7 @@ void InitScalePuzzleStructure(void) {
   ScaleStruct.state = INIT;
   ScaleStruct.mqtt_connected = false;
   ScaleStruct.connection_check_counter = 0;
+  ScaleStruct.scale_failure = 0;
   ReInitScalePuzzleStructure();
 }
 
@@ -222,7 +228,7 @@ DESCRIPTION:
     To call at every restart of the puzzle.
 *****************************************************************************************/
 void ReInitScalePuzzleStructure(void) {
-  ScaleStruct.reconnect_state = ERROR_STATE; // TODO welcher state sinnvoll?
+  ScaleStruct.reconnect_state = ERROR_STATE;
   ScaleStruct.led_state = LED_STATE_GREEN;
   ScaleStruct.puzzle_start = false;
   ScaleStruct.led_control = false;
@@ -328,24 +334,6 @@ bool mqtt_connect(void) {
 /*****************************************************************************************
                                        FUNCTION INFO
 NAME: 
-    mqtt_check
-DESCRIPTION:
-    
-
-*****************************************************************************************/
-bool mqtt_check(void) {
-  bool mqtt_check_finished = false;
-// TODO could be done without a function
-  if (ScaleStruct.puzzle_start != false) {
-    mqtt_check_finished = true;
-  }
-
-  return mqtt_check_finished;
-}
-
-/*****************************************************************************************
-                                       FUNCTION INFO
-NAME: 
     calibration_setup
 DESCRIPTION:
     Tare the scale to the current weight and wait until the scale is ready.
@@ -374,7 +362,8 @@ bool calibration_setup(void) {
 NAME: 
     is_scale_unbalanced
 DESCRIPTION:
-    
+    Measure the weight on the scale and if a wrong weight is measured, change the color
+    of the safe to red. The measuring process is debounced.
 *****************************************************************************************/
 bool is_scale_unbalanced(void) {
   bool unbalanced = false;
@@ -400,7 +389,8 @@ bool is_scale_unbalanced(void) {
 NAME: 
     is_scale_balanced
 DESCRIPTION:
-    
+    Measure the weight on the scale and if the initially tared weight is measured, change
+    the color of the safe to green. The measuring process is debounced.
 *****************************************************************************************/
 bool is_scale_balanced(void) {
   bool balanced = false;
@@ -439,8 +429,13 @@ bool is_scale_balanced(void) {
 NAME: 
     mqtt_callback
 DESCRIPTION:
-    
-
+    Evaluates the received MQTT messages. The following messages are processed:
+    Topic: 6/puzzle/scale
+    Messages: trigger on            || starts the puzzle
+              trigger off           || restarts the puzzle
+              trigger off skipped   || skips the puzzle and starts puzzle solved handling
+    Topic: 6/puzzle/terminal
+    Message: status active          || sets the puzzle to solved
 *****************************************************************************************/
 void mqtt_callback(char* topic, byte* message, unsigned int length) {
   debug_print("Message arrived on topic: ");
@@ -465,7 +460,7 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
   debug_print("Daten: "); 
   debug_print(daten);*/
 
-  // If a message is received on the topic 6/puzzle/scale, check the message.
+  /* If a message is received on the topic 6/puzzle/scale, check the message. */
   if (String(topic).equals(Mqtt_topic) != false) {
     if (String(method1).equals("trigger") != false) {
       if (String(state1).equals("on") != false) {
@@ -476,7 +471,6 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
         if (String(data1).equals("skipped") != false) {
           debug_print("Puzzle Skipped");
           ScaleStruct.puzzle_solved = true;
-          ScaleStruct.puzzle_restart = true;
         } else {
           debug_print("Restart Puzzle");
           ScaleStruct.puzzle_restart = true;
@@ -485,7 +479,7 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
     }
   }
 
-  // If a message is received on the topic 6/puzzle/terminal, check the message.
+  /* If a message is received on the topic 6/puzzle/terminal, check the message. */
   if (String(topic).equals(Mqtt_terminal) != false) {
     if (String(method1).equals("status") != false) {
       if (String(state1).equals("active") != false) {
@@ -502,21 +496,26 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
 NAME: 
     scale_measure_floppy_disks
 DESCRIPTION:
-    
+    Measures the weight on the scale. The scale is tared to a certain amount of floppy
+    disks. The amount of floppy disks is returned.
+    If the scale is not reacting for a specific time go to the error state.
 *****************************************************************************************/
 int scale_measure_floppy_disks() {
   int measure = 0;
   
   if (scale.is_ready()) {
     measure = round(scale.get_units(10));
+    ScaleStruct.scale_failure = 0;
 
     debug_print("Value for known weight is: ");
     debug_print(String(measure));
   } else {
     debug_print("HX711 not found.");
-    
-    // TODO Go to Error State
-    delay(1000);
+    ScaleStruct.scale_failure = ScaleStruct.scale_failure + 1;
+    if (ScaleStruct.scale_failure > 20) {
+      ScaleStruct.state = ERROR_STATE;
+    }
+    delay(500);
   }
 
   return measure;
@@ -527,7 +526,8 @@ int scale_measure_floppy_disks() {
 NAME: 
     set_safe_color
 DESCRIPTION:
-    
+    Sends a MQTT message to the safe with a specific color. The colors green, red and
+    orange are possible.
 *****************************************************************************************/
 void set_safe_color(led_state_t color_state){
   const char* color_message;
@@ -560,8 +560,7 @@ void set_safe_color(led_state_t color_state){
 NAME: 
     debug_print
 DESCRIPTION:
-    
-
+    Debug function to print messages via serial connection.
 *****************************************************************************************/
 void debug_print(String print_string) {
 #ifdef DEBUG
@@ -572,10 +571,9 @@ void debug_print(String print_string) {
 /*****************************************************************************************
                                        FUNCTION INFO
 NAME: 
-    calibration_setup
+    debug_led
 DESCRIPTION:
-    
-
+    Debug function to connect LEDs to show the current scale status.
 *****************************************************************************************/
 void debug_led(int led_color) {
 #ifdef DEBUG
@@ -589,5 +587,3 @@ void debug_led(int led_color) {
   }
 #endif
 }
-
-// TODO Ab und zu stuck at active trotz weight = 0;

@@ -23,6 +23,7 @@ typedef struct ScalePuzzle_HandlerType_Tag {
   bool puzzle_solved;
   bool puzzle_restart;
   uint8_t connection_check_counter;
+  uint8_t scale_failure;
 } ScalePuzzle_HandlerType;
 
 
