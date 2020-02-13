@@ -68,15 +68,16 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
     string msg = (char*)message->payload;
     string str_topicName = topicName;
 
-
     if (str_topicName.find("6/puzzle/terminal") != std::string::npos) {
-        if(msg.find("trigger") != std::string::npos && msg.find("skipped") != std::string::npos) {
+        if(msg.find("trigger") != std::string::npos) 
+            if (msg.find("skipped") != std::string::npos) {
             trigger_skipped = true;
-        }
-        else if (msg.find("trigger") != std::string::npos && msg.find("on") != std::string::npos) {
+            }
+        
+        else if (msg.find("on") != std::string::npos) {
             trigger_on = true;
         }
-        else if (msg.find("trigger") != std::string::npos && msg.find("off") != std::string::npos) {
+        else if (msg.find("off") != std::string::npos) {
             trigger_off = true;
         }
     }
