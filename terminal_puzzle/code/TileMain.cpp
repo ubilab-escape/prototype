@@ -71,16 +71,15 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
     if (str_topicName.find("6/puzzle/terminal") != std::string::npos) {
         if(msg.find("trigger") != std::string::npos) {
             if (msg.find("skipped") != std::string::npos) {
-            trigger_skipped = true;
+                trigger_skipped = true;
             }
-        
-        else if (msg.find("on") != std::string::npos) {
-            trigger_on = true;
+            else if (msg.find("on") != std::string::npos) {
+                trigger_on = true;
+            }
+            else if (msg.find("off") != std::string::npos) {
+                trigger_off = true;
+            }
         }
-        else if (msg.find("off") != std::string::npos) {
-            trigger_off = true;
-        }
-    }
     }
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
@@ -90,10 +89,9 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
 
 void connlost(void *context, char *cause)
 {
-//   while(MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
-//     std::this_thread::sleep_for(std::chrono::microseconds(5000));
-//   };
-MQTTClient_connect(client, &conn_opts);
+   while(MQTTClient_connect(client, &conn_opts) != MQTTCLIENT_SUCCESS) {
+     std::this_thread::sleep_for(std::chrono::microseconds(500000));
+   };
 }
 
 int main(int argc, char** argv) {
