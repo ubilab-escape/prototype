@@ -38,6 +38,9 @@ volatile bool trigger_off = false;
 volatile MQTTClient_deliveryToken deliveredtoken;
 volatile states current_state = inactive;
 
+MQTTClient client;
+MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
+
 void custom_print(char* s) {
   clear();
   mvprintw(0, 0, s);
@@ -117,6 +120,7 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
         }
         else if (msg.find("trigger") != std::string::npos && msg.find("off") != std::string::npos) {
             current_state = solved;
+            trigger_off = true;
         }
     }
     MQTTClient_freeMessage(&message);
@@ -124,8 +128,6 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
     return 1;
 }
 
-MQTTClient client;
-MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
 
 void connlost(void *context, char *cause)
 {
@@ -188,9 +190,11 @@ int main(int argc, char** argv) {
         if(trigger_on) {
             tstruct = TileStructure("STASIS.txt");
             clear();
-            tstruct.drawInitial(POSX, POSY);
+            tstruct.draw(POSX, POSY);
             refresh();
             trigger_on = false;
+            publish_state("inactive", &client);
+            cout << "trigger on";
         }
         if(!scale_alarm) {
             FILE *fp_a = popen("sudo ./check_floppy.sh 2>&1", "r");
@@ -267,12 +271,13 @@ int main(int argc, char** argv) {
       auto duration = std::chrono::duration_cast<std::chrono::microseconds>( t2 - t1 ).count();
       auto sleep_duration = 2000000-duration;
       if (sleep_duration > 0) {
-        usleep(sleep_duration);
+        std::this_thread::sleep_for(std::chrono::microseconds(sleep_duration));
+        ;//usleep(sleep_duration);
       }
       
       if (tstruct.solved()) {
-        tstruct.colorWhite();
-        tstruct.draw(POSX, POSY);
+        tstruct.colorWhiteInitial();
+        tstruct.drawInitial(POSX, POSY);
         refresh(); 
         current_state = solved;
         publish_state("solved", &client);
@@ -286,8 +291,13 @@ int main(int argc, char** argv) {
             tstruct.drawInitial(POSX, POSY);
             refresh();
             trigger_skipped = false;
+            publish_state("inactive", &client);
         }
-        usleep(10000);
+        if(trigger_off) {
+            trigger_off =false;
+            publish_state("inactive", &client);
+        }
+        //usleep(1000000);
     }
   }
 }
