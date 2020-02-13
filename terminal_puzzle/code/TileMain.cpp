@@ -136,7 +136,6 @@ int main(int argc, char** argv) {
   refresh();
 
   current_state = inactive;
-  publish_state("inactive", &client);
 
 
   // state machine
@@ -259,6 +258,9 @@ int main(int argc, char** argv) {
         if(trigger_off) {
             trigger_off = false;
             publish_state("inactive", &client);
+        }
+        if(trigger_on) {
+            current_state = inactive;
         }
     }
   }
