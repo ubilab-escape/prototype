@@ -172,7 +172,7 @@ int main(int argc, char** argv) {
         }
       pclose(fp_a);
       }
-    }
+    
 
     // riddle is active
     while (current_state == active) {
@@ -253,4 +253,4 @@ int main(int argc, char** argv) {
         }
     }
   }
-
+}
