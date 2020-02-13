@@ -144,6 +144,7 @@ void loop() {
       ScaleStruct.state = INIT;
       break;     
     case ERROR_STATE:
+    // TODO Disconnect from WIFI
       debug_print(String(ScaleStruct.state));
       ScaleStruct.state = INIT;
       break;    
@@ -202,7 +203,8 @@ void loop() {
 NAME: 
     InitScalePuzzleStructure
 DESCRIPTION:
-
+    Initialization function to initialize the Scale Puzzle Structure.
+    To call at every startup of the device.
 *****************************************************************************************/
 void InitScalePuzzleStructure(void) {
   ScaleStruct.state = INIT;
@@ -216,7 +218,8 @@ void InitScalePuzzleStructure(void) {
 NAME: 
     ReInitScalePuzzleStructure
 DESCRIPTION:
-
+    Initialization function to initialize the Scale Puzzle Structure.
+    To call at every restart of the puzzle.
 *****************************************************************************************/
 void ReInitScalePuzzleStructure(void) {
   ScaleStruct.reconnect_state = ERROR_STATE; // TODO welcher state sinnvoll?
@@ -264,8 +267,9 @@ bool wifi_setup(void) {
 NAME: 
     mqtt_setup
 DESCRIPTION:
-    
-
+    Submits the MQTT connection with the specified IP address and MQTT server port to the
+    MQTT client
+    Submits the callback function with a given set of messages to the MQTT client.
 *****************************************************************************************/
 bool mqtt_setup(void) {
   bool mqtt_setup_finished = false;
@@ -288,22 +292,23 @@ bool mqtt_setup(void) {
 NAME: 
     mqtt_connect
 DESCRIPTION:
-    
-
+    Creates a new client ID and connects to the MQTT server.
+    Creates subscription to the specified MQTT topics.
+    If no connection is possible, wait 5 seconds before the next try.
 *****************************************************************************************/
 bool mqtt_connect(void) {
   bool reconnect_finished = false;
 
   debug_print("Attempting MQTT connection...");
 
-  // Create a random client ID
+  /* Create a random client ID */
   String clientId = "ESP8266Scale-";
   clientId += String(random(0xffff), HEX);
-  // Attempt to connect
+  /* Attempt to connect */
   if (client.connect(clientId.c_str())) {  
     debug_print("connected");
     
-    // Subscribe
+    /* Subscribe */
     client.subscribe(Mqtt_topic);
     client.subscribe(Mqtt_terminal);
     
@@ -311,9 +316,9 @@ bool mqtt_connect(void) {
   } else {
     debug_print("failed, rc=");
     debug_print(String(client.state()));
-    debug_print(" try again in 5 seconds");
+    debug_print("try again in 5 seconds");
 
-    // Wait 5 seconds before retrying
+    /* Wait 5 seconds before retrying */
     delay(5000);
   }
 
@@ -343,16 +348,14 @@ bool mqtt_check(void) {
 NAME: 
     calibration_setup
 DESCRIPTION:
-    
-
+    Tare the scale to the current weight and wait until the scale is ready.
 *****************************************************************************************/
 bool calibration_setup(void) {
   bool calibration_finished = false;
 
-  debug_print("Beginning:");
-
   scale.tare();
-  //scale.set_offset(offset);
+
+  debug_print("Beginning:");
 #ifdef DEBUG
   pinMode(LED_RED, OUTPUT);
   pinMode(LED_GREEN, OUTPUT);
