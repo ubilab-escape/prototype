@@ -31,7 +31,6 @@ enum states {inactive, active, solved, failed};
 
 using namespace std;
 
-volatile bool scale_alarm = false;
 volatile bool trigger_on = false;
 volatile bool trigger_skipped = false;
 volatile bool trigger_off = false;
@@ -40,35 +39,6 @@ volatile states current_state = inactive;
 
 MQTTClient client;
 MQTTClient_connectOptions conn_opts = MQTTClient_connectOptions_initializer;
-
-void custom_print(char* s) {
-  clear();
-  mvprintw(0, 0, s);
-  refresh();
-  sleep(2);
-}
-
-void custom_print(const char* s) {
-  clear();
-  mvprintw(0, 0, s);
-  refresh();
-  sleep(2);
-}
-
-void custom_print(int i) {
-  std::string s = std::to_string(i);
-  char const *c = s.c_str();
-  clear();
-  mvprintw(0, 0, c);
-  refresh();
-  sleep(2);
-}
-
-
-inline bool exist_test (const std::string& name) {
-  struct stat buffer;
-  return (stat (name.c_str(), &buffer) == 0);
-}
 
 void zoom_out(int level) {
     for (int i = 0; i < level; i++) {
@@ -98,18 +68,7 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
     string msg = (char*)message->payload;
     string str_topicName = topicName;
 
-    // If there are status messages for the scale change scale_alarm accordingly
-    if (str_topicName.find("6/puzzle/scale") != std::string::npos) {
-        if(msg.find("status") != std::string::npos) {
-            if(msg.find("inactive") != std::string::npos) {
-                scale_alarm = false; // Change to true for no alarm dependency
-            }
-            else if (msg.find("active") != std::string::npos) {
-                scale_alarm = true;
-            }
-        }
-    } 
-    else if (str_topicName.find("6/puzzle/terminal") != std::string::npos) {
+    if (str_topicName.find("6/puzzle/terminal") != std::string::npos) {
         if(msg.find("trigger") != std::string::npos && msg.find("skipped") != std::string::npos) {
             current_state = solved;
             trigger_skipped = true;
@@ -193,31 +152,10 @@ int main(int argc, char** argv) {
             tstruct.draw(POSX, POSY);
             refresh();
             trigger_on = false;
-            publish_state("inactive", &client);
-            cout << "trigger on";
+            publish_state("active", &client);
+            current_state = active;
         }
-        if(!scale_alarm) {
-            FILE *fp_a = popen("sudo ./check_floppy.sh 2>&1", "r");
-            char buffer [120];
-            bool sd_found = false;
-            while (fgets(buffer, 120, fp_a) != NULL){
-                if(strstr(buffer, "/dev/sd") != NULL) {
-                sd_found = true;
-                }
-                else if (sd_found) { 
-                    if(buffer[26] != '0') {
-                        tstruct.shuffle();
-                        clear();
-                        tstruct.draw(POSX, POSY);
-                        refresh();
-                        current_state = active;
-                        publish_state("active", &client);
-                    }
-                }
-            }
-      pclose(fp_a);
       }
-    }
 
     // riddle is active
     while (current_state == active) {
