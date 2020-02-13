@@ -108,7 +108,7 @@ int main(int argc, char** argv) {
 //     std::this_thread::sleep_for(std::chrono::microseconds(5000));
 //   };
   
-    MQTTClient_connect(client, &conn_opts)
+    MQTTClient_connect(client, &conn_opts);
   MQTTClient_subscribe(client, TOPIC_TERMINAL, QOS);
   MQTTClient_subscribe(client, TOPIC_SCALE, QOS);
 
@@ -183,7 +183,7 @@ int main(int argc, char** argv) {
         }
         if (trigger_on) {
             trigger_on = false;
-            publish_state("active");
+            publish_state("active", &client);
         }
       auto t1 = std::chrono::high_resolution_clock::now();
       FILE *fp_a = popen("sudo ./check_floppy.sh 2>&1", "r");
