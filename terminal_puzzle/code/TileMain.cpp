@@ -262,6 +262,8 @@ int main(int argc, char** argv) {
         if(trigger_on) {
             current_state = inactive;
         }
+
+     std::this_thread::sleep_for(std::chrono::microseconds(500000));
     }
   }
 }
