@@ -69,7 +69,7 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
     string str_topicName = topicName;
 
     if (str_topicName.find("6/puzzle/terminal") != std::string::npos) {
-        if(msg.find("trigger") != std::string::npos) 
+        if(msg.find("trigger") != std::string::npos) {
             if (msg.find("skipped") != std::string::npos) {
             trigger_skipped = true;
             }
@@ -80,6 +80,7 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *m
         else if (msg.find("off") != std::string::npos) {
             trigger_off = true;
         }
+    }
     }
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
