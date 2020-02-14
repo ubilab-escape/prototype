@@ -59,6 +59,7 @@ void loop() {
       InitScalePuzzleStructure();
       debug_print(String(ScaleStruct.state));
       ScaleStruct.state = WIFI_SETUP;
+      wifi_set_sleep_type(NONE_SLEEP_T);
       break;
     case WIFI_SETUP:
       if (wifi_setup() != false) {
@@ -258,10 +259,13 @@ bool wifi_setup(void) {
 #endif
     if (WiFi.status() == WL_CONNECTED) {
       wifi_finished = true;
-
+      delay(500);
       debug_print(String("Connection status: " + String(WiFi.status())));
+      delay(500);
       debug_print("Connected, IP address: ");
       debug_print(WiFi.localIP().toString());
+    } else {
+      delay(500);
     }
   }
 
@@ -324,8 +328,8 @@ bool mqtt_connect(void) {
     debug_print(String(client.state()));
     debug_print("try again in 5 seconds");
 
-    /* Wait 5 seconds before retrying */
-    delay(5000);
+    /* Wait 2 seconds before retrying */
+    delay(2000);
   }
 
   return reconnect_finished;
