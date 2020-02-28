@@ -5,7 +5,7 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include "HX711.h"
-#include "Mqtt_test.h"
+#include "scale_puzzle.h"
 #include "wifi_pw.h"
 
 /* uncomment to activate debug mode */
