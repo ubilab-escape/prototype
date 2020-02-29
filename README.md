@@ -1,14 +1,29 @@
 # Prototype
-Prototype &amp; Puzzles
+The goal of the escape room is to steal and upload secret prototype data. This group was responsible for designing the storage device, the first step for uploading the data and surrounding puzzles. We chose floppy disks as storage devices. The floppys were hidden inside a safe, which was build by the safe group. The floppys are lying on a scale, which was build by us, so that it can be detected if they were taken. Using these floppys the players are able to "upload" the data by solving a picture rearranging puzzle in the server room. 
 
-## Tricking STASIS
-To get the 4 floppy disks (e.g. the prototype) out of the safe, you have to replace them with 4 different floppy disks, that can be found in the room. If you remove the prototype disks without replacing them, STASIS is very angry and you can't solve the puzzle 'Reading the prototype'.
+## Scale Puzzle
+### Building the scale
+Plexiglas plates, a 5 kg load cell with an HX711 and an ESP8266 were used for building the scale. The ESP is responsible for checking the weight and handling the MQTT connection. The state machine handling the communication can be seen in the [presentation](Ubilab_Scale_Presentation.pdf).
+
+### Solving the puzzle by tricking STASIS
+To get the 4 floppy disks (e.g. the prototype) out of the safe, you have to replace them with 4 different floppy disks, that can be found in the room. If you remove the prototype disks without replacing them, STASIS is very angry and wants the prototype back.
+
 ### Hints
 1. Have you watched Indiana Jones? Maybe a famous scene inspires you.
 2. Can you see more floppy disks outside the safe?
-3. Try to replace the floppy disks inside the safte.
+3. Try to replace the floppy disks inside the safe.
 
 ## Reading the prototype
+
+### Building the puzzle
+An raspberry pi, a 7 inch touchscreen display and two USB floppy drives were used for this puzzle. The parts were mounted to a lasercutted and engraved wooden panel. This panel is set into a "server rack" inside the server room. 
+
+We changed the disk identifiers of the four prototype floppy disks to 1, 2, 3, 4. Which floppy drive is inserted into which drive can be detected by running this [script](check_floppy.sh) peridodically. This output is then used for rotating the image accordingly. For the MQTT communication the [paho library](https://github.com/eclipse/paho.mqtt.c) was used.
+
+#### Hack for malfunctioning floppy
+One of the floppy drives got stuck if the floppy was ejected at the wrong time. This led to a timeout of the script. If a timeout occured the usb ports were turned off and on to restart the floppy drive. [Uhubctl](https://github.com/mvp/uhubctl) was used for this. This could be removed if the puzzle was rebuilded with a new floppy drive.
+
+### Solving the puzzle by reassembling the image
 To read the data from the prototype you have to reassemble an image. The image shifts depending on which disk is inserted into which reader. The colors of the disks match the part of the image that is changed. One reader shifts the position of the matching colored part, the other rotates the matching colored parts themselves.
 
 ### Hints
@@ -16,13 +31,3 @@ To read the data from the prototype you have to reassemble an image. The image s
 2. You need all four floppy disks
 3. The floppy disk colors match the image colors
 
-
-## Components
-|Component| Already Bought?| Buy Links|
-|---------|:--------:|---------|
-|2 floppy reader|&#9745; | [Conrad](https://www.conrad.com/p/basetech-gen-144-floppy-disk-drive-usb-20-1170561) |
-|min 4-8 floppy disks|&#9745;| [Conrad](https://www.conrad.com/p/xlyne-9010000-blank-35-floppy-disk-144-mb-10-pcs-417512) |
-|ESP8266|&#9744; | [Conrad](https://www.conrad.de/de/p/entwickler-platine-sbc-nodemcu-esp8266-1613301.html) |
-|HX711|&#9745;| [Conrad](https://www.conrad.de/de/p/sparkfun-load-cell-amplifier-hx711-for-weight-measurements-802236777.html), [Amazon](https://www.amazon.de/Ils-Module-Aluminum-Weighing-Arduino/dp/B0769FZ7NB/ref=sr_1_6?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&keywords=load+cell&qid=1573472255&sr=8-6) |
-|weight scale| &#9745; |[Conrad](https://www.conrad.de/de/p/sparkfun-mini-load-cell-100g-straight-bar-tal221-802236791.html) |
-|lcd display|&#9745; | [Pollin](https://www.pollin.de/p/7-17-78-cm-display-set-mit-touchscreen-hdmi-vga-video-810841) |
