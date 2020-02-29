@@ -225,7 +225,7 @@ void InitScalePuzzleStructure(void) {
 NAME: 
     ReInitScalePuzzleStructure
 DESCRIPTION:
-    Initialization function to initialize the Scale Puzzle Structure.
+    Initialization function to reinitialize the Scale Puzzle Structure.
     To call at every restart of the puzzle.
 *****************************************************************************************/
 void ReInitScalePuzzleStructure(void) {
@@ -243,7 +243,7 @@ NAME:
     wifi_setup
 DESCRIPTION:
     Connect to the given WiFi. For the password create a file named wifi_pw.h and define 
-    a variable "const char* PASSWORD" with the password.
+    a variable "const char* PASSWORD" containing the password.
 *****************************************************************************************/
 bool wifi_setup(void) {
   bool wifi_finished = false;
@@ -278,7 +278,7 @@ NAME:
     mqtt_setup
 DESCRIPTION:
     Submits the MQTT connection with the specified IP address and MQTT server port to the
-    MQTT client
+    MQTT client.
     Submits the callback function with a given set of messages to the MQTT client.
 *****************************************************************************************/
 bool mqtt_setup(void) {
@@ -303,8 +303,8 @@ NAME:
     mqtt_connect
 DESCRIPTION:
     Creates a new client ID and connects to the MQTT server.
-    Creates subscription to the specified MQTT topics.
-    If no connection is possible, wait 5 seconds before the next try.
+    Creates subscriptions to the specified MQTT topics.
+    If no connection is possible, wait 2 seconds before the next try.
 *****************************************************************************************/
 bool mqtt_connect(void) {
   bool reconnect_finished = false;
@@ -401,8 +401,10 @@ bool is_scale_balanced(void) {
   static int old_reading = 4;
   static int new_reading = 4;
   static int green_count = 0;
+  /* measure the current weight */
   int reading = scale_measure_floppy_disks();
-   
+
+  /* compare the last measured value with the current value */
   old_reading = new_reading;
   new_reading = reading;
   if (old_reading == new_reading) {
@@ -457,12 +459,6 @@ void mqtt_callback(char* topic, byte* message, unsigned int length) {
   const char* method1 = rxdoc["method"];
   const char* state1 = rxdoc["state"];
   const char* data1 = rxdoc["data"];
-  /*debug_print("Methode: "); 
-  debug_print(method1);
-  debug_print("State: "); 
-  debug_print(state1);
-  debug_print("Daten: "); 
-  debug_print(daten);*/
 
   /* If a message is received on the topic 6/puzzle/scale, check the message. */
   if (String(topic).equals(Mqtt_topic) != false) {

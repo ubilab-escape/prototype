@@ -13,7 +13,7 @@ Add the following board manager URL in Preferences -> Additional Boards Manager 
 
 Install the following board under Tools -> Board: -> Boards Manager... :
 - esp8266 by ESP8266 Community (2.6.3)
-In Tools -> Board select the "Generic ESP8266 Module".
+In Tools -> Board select the "Generic ESP8266 Module".  
 No further selections are made in the Tools tab.
 
 Additionally the following libraries are used:
