@@ -5,6 +5,9 @@ The goal of the escape room is to steal and upload secret prototype data. This g
 ### Building the scale
 Plexiglas plates, a 5 kg load cell with an HX711 and an ESP8266 were used for building the scale. The ESP is responsible for checking the weight and handling the MQTT connection. The state machine handling the communication can be seen in the [presentation](Ubilab_Scale_Presentation.pdf).
 
+![Setup of the scale](scale.svg)
+
+
 ### Solving the puzzle by tricking STASIS
 To get the 4 floppy disks (e.g. the prototype) out of the safe, you have to replace them with 4 different floppy disks, that can be found in the room. If you remove the prototype disks without replacing them, STASIS is very angry and wants the prototype back.
 
@@ -18,7 +21,11 @@ To get the 4 floppy disks (e.g. the prototype) out of the safe, you have to repl
 ### Building the puzzle
 An raspberry pi, a 7 inch touchscreen display and two USB floppy drives were used for this puzzle. The parts were mounted to a lasercutted and engraved wooden panel. This panel is set into a "server rack" inside the server room. 
 
-We changed the disk identifiers of the four prototype floppy disks to 1, 2, 3, 4. Which floppy drive is inserted into which drive can be detected by running this [script](check_floppy.sh) peridodically. This output is then used for rotating the image accordingly. For the MQTT communication the [paho library](https://github.com/eclipse/paho.mqtt.c) was used.
+We changed the disk identifiers of the four prototype floppy disks to 1, 2, 3, 4. Which floppy drive is inserted into which drive can be detected by running this [script](check_floppy.sh) peridodically. This output is then used for rotating the image accordingly. For the MQTT communication the [paho library](https://github.com/eclipse/paho.mqtt.c) was used. The definition of the protocol can be seen [here](https://github.com/ubilab-escape/operator#%CE%BCc-communication).
+
+![MQTT communication of the terminal](terminal_puzzle_mqtt.svg)
+
+
 
 #### Hack for malfunctioning floppy
 One of the floppy drives got stuck if the floppy was ejected at the wrong time. This led to a timeout of the script. If a timeout occured the usb ports were turned off and on to restart the floppy drive. [Uhubctl](https://github.com/mvp/uhubctl) was used for this. This could be removed if the puzzle was rebuilded with a new floppy drive.
