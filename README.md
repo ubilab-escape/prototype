@@ -21,6 +21,11 @@ To get the 4 floppy disks (e.g. the prototype) out of the safe, you have to repl
 ### Building the puzzle
 An raspberry pi, a 7 inch touchscreen display and two USB floppy drives were used for this puzzle. The parts were mounted to a lasercutted and engraved wooden panel. This panel is set into a "server rack" inside the server room. 
 
+![Visualization of the puzzle](floppy.svg)
+<img src="https://github.com/ubilab-escape/prototype/blob/master/terminal_puzzle/STASIS.png" width="200">
+
+On this screen the Logo chosen for Stasis is visible on a 4 by 4 grid of colored tiles as can be seen in the figure above. When inserting the first floppy the picture gets scrambled and needs to be reassambled. This can be done by inserting the floppys into the drives which trigger different movements in the picture based on the floppy drive as well as the floppy inserted. One drive causes the tiles of the same color of the floppy to rotate by 90°, the other causes the tiles of the color of the inserted floppy to jump to the next position (1 -> 2, 2 -> 3 ... 4 -> 1). After rearrangement the logo turns grey and the puzzle is solved. The visualization on the screen is done with [ncurses](https://invisible-island.net/ncurses/announce.html) in the terminal. To have a good resolution the font size has to be minimal.
+
 We changed the disk identifiers of the four prototype floppy disks to 1, 2, 3, 4. Which floppy drive is inserted into which drive can be detected by running this [script](check_floppy.sh) peridodically. This output is then used for rotating the image accordingly. For the MQTT communication the [paho library](https://github.com/eclipse/paho.mqtt.c) was used. The definition of the protocol can be seen [here](https://github.com/ubilab-escape/operator#%CE%BCc-communication).
 
 ![MQTT communication of the terminal](terminal_puzzle_mqtt.svg)
