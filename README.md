@@ -3,22 +3,45 @@ The goal of the escape room is to steal and upload secret prototype data. This g
 
 ## Scale Puzzle
 ### Building the scale
-Plexiglas plates, a 5 kg load cell with an HX711 and an ESP8266 were used for building the scale. The ESP is responsible for checking the weight and handling the MQTT connection. The state machine handling the communication can be seen in the [presentation](Ubilab_Scale_Presentation.pdf).
+Plexiglas plates, a 5 kg load cell with an HX711 and an ESP8266 were used for building the scale. The ESP is responsible for checking the weight and handling the MQTT connection. The state machine that runs the puzzle and is handling the communication can be seen in the [presentation](Ubilab_Scale_Presentation.pdf).
 
 ![Setup of the scale](scale.svg)
 
-### Building the software for the Scale
+### Building the software for the scale
 The software for the ESP8266 is build using the Arduino IDE (1.8.10). The following configurations were made in the IDE:
 Add the following board manager URL in Preferences -> Additional Boards Manager URLs: https://arduino.esp8266.com/stable/package_esp8266com_index.json
 Install the following board under Tools -> Board: -> Boards Manager... :
 - esp8266 by ESP8266 Community (2.6.3)
-In Tools -> Board select the "Generic ESP8266 Module". No further selections are made in the Tools tab.
+In Tools -> Board select the "Generic ESP8266 Module".
+No further selections are made in the Tools tab.
+
 Additionally the following libraries are used:
 - Arduinojson by Benoit Blanchon (6.14.0)
 - HX711 Arduino Library by Bogdan Necula, Andreas Motl (0.7.2)
 - PubSbubClient by Nick O'Leary (2.7.0)
 
 Now open the project in the Arduino IDE and create a new file in the sketch called "wifi_pw.h". Add the following line with your WIFI password: const char* PASSWORD = "DEFAULT";
+
+### MQTT commands to control the scale
+The MQTT topic of the scale is: "6/puzzle/scale". The scale is also listening to the topic of the terminal puzzle ("6/puzzle/terminal"), because it switches to the solved state, if the terminal puzzle is reached and started with a floppy disk that was removed from the scale.
+The following messages can be used to control the scale:
+| method  | state  | data    |   | description                                                                                         |
+|---------|--------|---------|---|-----------------------------------------------------------------------------------------------------|
+| trigger | on     |         |   | Starts the puzzle (scale reacts to differences in weight).                                          |
+| trigger | off    |         |   | Restarts the scale. Scale is recalibrated and waits for a new 'trigger on'.                         |
+| trigger | off    | skipped |   | Puzzle switches immediately into the solved state. The scale waits for a 'trigger off' to restart. |
+|         |        |         |   |                                                                                                     |
+| status  | active |         |   |  The scale puzzle is solved. Scale is in solved state and waits for a 'trigger off'. (This message is sent by the terminal topic)|
+
+The following messages are sent by the scale to report the current status:
+| method | state    | data |   | description                                                                         |
+|--------|----------|------|---|-------------------------------------------------------------------------------------|
+| status | inactive |      |   | The scale has finished it's initialization and waits for a 'trigger on'.            |
+| status | active   |      |   | The scale has received a 'trigger on' message and starts the puzzle.                |
+| status | solved   |      |   | The scale puzzle is solved. Scale is in solved state and waits for a 'trigger off'. |
+
+### Debug Mode
+The scale has also a debug mode. To activate it the '#define DEBUG' has to be set in the code (see comment in code). The serial interface then outputs information about errors and the current state in the state machine. LEDs can also be connected to the ESP, the pins 0 for green and 5 for red are provided for this.
 
 ### Solving the puzzle by tricking STASIS
 To get the 4 floppy disks (e.g. the prototype) out of the safe, you have to replace them with 4 different floppy disks, that can be found in the room. If you remove the prototype disks without replacing them, STASIS is very angry and wants the prototype back.
@@ -31,7 +54,7 @@ To get the 4 floppy disks (e.g. the prototype) out of the safe, you have to repl
 ## Reading the prototype
 
 ### Building the puzzle
-An raspberry pi, a 7 inch touchscreen display and two USB floppy drives were used for this puzzle. The parts were mounted to a lasercutted and engraved wooden panel. This panel is set into a "server rack" inside the server room.
+A raspberry pi, a 7 inch touchscreen display and two USB floppy drives were used for this puzzle. The parts were mounted to a lasercutted and engraved wooden panel. This panel is set into a "server rack" inside the server room.
 
 ![Visualization of the puzzle](floppy.svg)
 <img src="https://github.com/ubilab-escape/prototype/blob/master/terminal_puzzle/STASIS.png" width="200">
