@@ -10,6 +10,7 @@ Plexiglas plates, a 5 kg load cell with an HX711 and an ESP8266 were used for bu
 ### Building the software for the scale
 The software for the ESP8266 is build using the Arduino IDE (1.8.10). The following configurations were made in the IDE:
 Add the following board manager URL in Preferences -> Additional Boards Manager URLs: https://arduino.esp8266.com/stable/package_esp8266com_index.json
+
 Install the following board under Tools -> Board: -> Boards Manager... :
 - esp8266 by ESP8266 Community (2.6.3)
 In Tools -> Board select the "Generic ESP8266 Module".
@@ -24,6 +25,7 @@ Now open the project in the Arduino IDE and create a new file in the sketch call
 
 ### MQTT commands to control the scale
 The MQTT topic of the scale is: "6/puzzle/scale". The scale is also listening to the topic of the terminal puzzle ("6/puzzle/terminal"), because it switches to the solved state, if the terminal puzzle is reached and started with a floppy disk that was removed from the scale.
+
 The following messages can be used to control the scale:
 | method  | state  | data    |   | description                                                                                         |
 |---------|--------|---------|---|-----------------------------------------------------------------------------------------------------|
@@ -31,7 +33,7 @@ The following messages can be used to control the scale:
 | trigger | off    |         |   | Restarts the scale. Scale is recalibrated and waits for a new 'trigger on'.                         |
 | trigger | off    | skipped |   | Puzzle switches immediately into the solved state. The scale waits for a 'trigger off' to restart. |
 |         |        |         |   |                                                                                                     |
-| status  | active |         |   |  The scale puzzle is solved. Scale is in solved state and waits for a 'trigger off'. (This message is sent by the terminal topic)|
+| status  | active |         |   |  The scale puzzle is solved. Scale is in solved state and waits for a 'trigger off'. (This message is sent on the terminal topic)|
 
 The following messages are sent by the scale to report the current status:
 | method | state    | data |   | description                                                                         |
