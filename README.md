@@ -1,5 +1,5 @@
 # Prototype
-The goal of the escape room is to steal and upload secret prototype data. This group was responsible for designing the storage device, the first step for uploading the data and surrounding puzzles. We chose floppy disks as storage devices. The floppys were hidden inside a safe, which was build by the safe group. The floppys are lying on a scale, which was build by us, so that it can be detected if they were taken. Using these floppys the players are able to "upload" the data by solving a picture rearranging puzzle in the server room. 
+The goal of the escape room is to steal and upload secret prototype data. This group was responsible for designing the storage device, the first step for uploading the data and surrounding puzzles. We chose floppy disks as storage devices. The floppys were hidden inside a safe, which was build by the safe group. The floppys are lying on a scale, which was build by us, so that it can be detected if they were taken. Using these floppys the players are able to "upload" the data by solving a picture rearranging puzzle in the server room.
 
 ## Scale Puzzle
 ### Building the scale
@@ -7,6 +7,18 @@ Plexiglas plates, a 5 kg load cell with an HX711 and an ESP8266 were used for bu
 
 ![Setup of the scale](scale.svg)
 
+### Building the software for the Scale
+The software for the ESP8266 is build using the Arduino IDE (1.8.10). The following configurations were made in the IDE:
+Add the following board manager URL in Preferences -> Additional Boards Manager URLs: https://arduino.esp8266.com/stable/package_esp8266com_index.json
+Install the following board under Tools -> Board: -> Boards Manager... :
+- esp8266 by ESP8266 Community (2.6.3)
+In Tools -> Board select the "Generic ESP8266 Module". No further selections are made in the Tools tab.
+Additionally the following libraries are used:
+- Arduinojson by Benoit Blanchon (6.14.0)
+- HX711 Arduino Library by Bogdan Necula, Andreas Motl (0.7.2)
+- PubSbubClient by Nick O'Leary (2.7.0)
+
+Now open the project in the Arduino IDE and create a new file in the sketch called "wifi_pw.h". Add the following line with your WIFI password: const char* PASSWORD = "DEFAULT";
 
 ### Solving the puzzle by tricking STASIS
 To get the 4 floppy disks (e.g. the prototype) out of the safe, you have to replace them with 4 different floppy disks, that can be found in the room. If you remove the prototype disks without replacing them, STASIS is very angry and wants the prototype back.
@@ -19,7 +31,7 @@ To get the 4 floppy disks (e.g. the prototype) out of the safe, you have to repl
 ## Reading the prototype
 
 ### Building the puzzle
-An raspberry pi, a 7 inch touchscreen display and two USB floppy drives were used for this puzzle. The parts were mounted to a lasercutted and engraved wooden panel. This panel is set into a "server rack" inside the server room. 
+An raspberry pi, a 7 inch touchscreen display and two USB floppy drives were used for this puzzle. The parts were mounted to a lasercutted and engraved wooden panel. This panel is set into a "server rack" inside the server room.
 
 ![Visualization of the puzzle](floppy.svg)
 <img src="https://github.com/ubilab-escape/prototype/blob/master/terminal_puzzle/STASIS.png" width="200">
@@ -42,4 +54,3 @@ To read the data from the prototype you have to reassemble an image. The image s
 1. Be patient, watch closely and reassemble the image
 2. You need all four floppy disks
 3. The floppy disk colors match the image colors
-
